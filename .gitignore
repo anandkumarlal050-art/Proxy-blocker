@@ -14,24 +14,39 @@ venv/
 env/
 .venv/
 
-# Database (auto-generated, do not commit)
+# Database (auto-generated)
 *.db
 *.sqlite3
 
-# Snapshots (user-uploaded biometric images)
+# Snapshots
 static/snapshots/
+backend/static/snapshots/
 
-# Windows
+# Secrets — NEVER commit
+backend/.env
+.env
+
+# Windows temp
 powershell.bat
 powershell.cmd
 Thumbs.db
 desktop.ini
 
-# IDE / Editor
+# IDE
 .vscode/
 .idea/
 *.swp
-*.swo
 
 # Logs
 *.log
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Prisma generated client (regenerated from schema)
+backend/prisma/client/
+
+# Old template files (replaced by React)
+templates/

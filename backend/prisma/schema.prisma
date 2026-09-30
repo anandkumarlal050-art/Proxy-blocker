@@ -1,0 +1,102 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Faculty {
+  id          String    @id
+  name        String
+  email       String    @unique
+  password    String
+  department  String
+  designation String
+  subjects    Subject[]
+  sessions    Session[]
+
+  @@map("faculty")
+}
+
+model Student {
+  id             String           @id
+  roll_no        String           @unique
+  name           String
+  email          String           @unique
+  password       String
+  department     String
+  semester       String
+  photo_url      String
+  student_subjects StudentSubject[]
+  attendance_logs AttendanceLog[]
+
+  @@map("students")
+}
+
+model Subject {
+  id            String           @id
+  code          String           @unique
+  name          String
+  faculty_id    String
+  total_classes Int              @default(40)
+  faculty       Faculty          @relation(fields: [faculty_id], references: [id])
+  student_subjects StudentSubject[]
+  sessions      Session[]
+  attendance_logs AttendanceLog[]
+
+  @@map("subjects")
+}
+
+model StudentSubject {
+  student_id       String
+  subject_id       String
+  attended_classes Int     @default(0)
+  total_classes    Int     @default(40)
+  student          Student @relation(fields: [student_id], references: [id])
+  subject          Subject @relation(fields: [subject_id], references: [id])
+
+  @@id([student_id, subject_id])
+  @@map("student_subjects")
+}
+
+model Session {
+  id                    String          @id
+  subject_id            String
+  faculty_id            String
+  classroom_name        String
+  lat                   Float
+  lng                   Float
+  allowed_radius_meters Float           @default(100.0)
+  created_at            Float
+  expires_at            Float
+  status                String          @default("active")
+  subject               Subject         @relation(fields: [subject_id], references: [id])
+  faculty               Faculty         @relation(fields: [faculty_id], references: [id])
+  attendance_logs       AttendanceLog[]
+
+  @@map("sessions")
+}
+
+model AttendanceLog {
+  id                  Int     @id @default(autoincrement())
+  session_id          String
+  student_id          String
+  subject_id          String
+  marked_at           String
+  gps_lat             Float
+  gps_lng             Float
+  distance_meters     Float
+  face_confidence     Float
+  verification_status String  @default("VERIFIED")
+  snapshot_path       String?
+  session             Session @relation(fields: [session_id], references: [id])
+  student             Student @relation(fields: [student_id], references: [id])
+  subject             Subject @relation(fields: [subject_id], references: [id])
+
+  @@unique([session_id, student_id])
+  @@map("attendance_logs")
+}
