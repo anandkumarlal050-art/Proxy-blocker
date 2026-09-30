@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faculty Portal | SmartPresence AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .faculty-container {
+      padding: 30px 0 60px 0;
+    }
+    .top-bar-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      margin-bottom: 28px;
+    }
+    .faculty-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .faculty-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 28px;
+    }
+    @media (max-width: 992px) {
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+    .share-link-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      word-break: break-all;
+    }
+    .share-link-text {
+      font-size: 0.85rem;
+      color: var(--secondary);
+      font-family: monospace;
+    }
+    .overall-timer-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .overall-timer-progress {
+      height: 100%;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      width: 100%;
+      transition: width 1s linear;
+    }
+    .student-thumb {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">🎓</div>
+        <span>SmartPresence AI</span>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/faculty" class="nav-link active">Faculty Portal</a>
+        <a href="/student" class="nav-link">Student Portal</a>
+        <a href="/dashboard" class="nav-link">Student Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container faculty-container">
+    
+    <!-- Login Screen (shown if not logged in) -->
+    <div id="login-section" class="glass-card" style="max-width: 480px; margin: 40px auto; padding: 40px;">
+      <div style="text-align: center; margin-bottom: 28px;">
+        <div class="brand-icon" style="margin: 0 auto 16px auto; width: 52px; height: 52px; font-size: 1.6rem;">👨‍🏫</div>
+        <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 6px;">Faculty Portal Login</h2>
+        <p style="color: var(--text-secondary); font-size: 0.92rem;">Enter your faculty credentials to manage sessions</p>
+      </div>
+
+      <form id="faculty-login-form">
+        <div class="form-group">
+          <label class="form-label">Faculty Email Address</label>
+          <input type="email" id="login-email" class="form-control" value="alan@cs.edu" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="login-password" class="form-control" value="faculty123" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+          Sign In to Faculty Portal →
+        </button>
+      </form>
+
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color); text-align: center;">
+        <button id="quick-fill-faculty" class="btn btn-outline btn-sm" style="width: 100%;">
+          ⚡ Quick 1-Click Login (Dr. Alan Turing)
+        </button>
+      </div>
+    </div>
+
+    <!-- Faculty Dashboard (shown after login) -->
+    <div id="dashboard-section" style="display: none;">
+      
+      <!-- Top Profile Bar -->
+      <div class="glass-card top-bar-card">
+        <div class="faculty-meta">
+          <div class="faculty-avatar" id="faculty-avatar-text">AT</div>
+          <div>
+            <h2 id="faculty-name" style="font-size: 1.25rem; font-weight: 700;">Dr. Alan Turing</h2>
+            <p id="faculty-dept" style="color: var(--text-secondary); font-size: 0.88rem;">Computer Science & Engineering • Professor</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <a href="/api/faculty/FAC01/export-csv" id="export-csv-btn" class="btn btn-secondary btn-sm" title="Export CSV Report">
+            📥 Export CSV Report
+          </a>
+          <button id="logout-btn" class="btn btn-outline btn-sm">
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Columns Grid -->
+      <div class="grid-2col">
+        
+        <!-- Left Column: Session Configuration & Active QR Code -->
+        <div>
+          <!-- Session Setup Card (when no active session) -->
+          <div id="session-setup-card" class="glass-card" style="padding: 30px; margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+              <span style="font-size: 1.4rem;">🎯</span>
+              <h3 style="font-size: 1.25rem; font-weight: 700;">Start Attendance Session</h3>
+            </div>
+            
+            <form id="create-session-form">
+              <div class="form-group">
+                <label class="form-label">Select Subject</label>
+                <select id="session-subject" class="form-control" required>
+                  <option value="">-- Loading Subjects... --</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Classroom / Hall</label>
+                <input type="text" id="session-classroom" class="form-control" value="Room 402 - CS Block" required>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label">GPS Latitude</label>
+                  <input type="number" step="0.000001" id="session-lat" class="form-control" value="28.545000" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">GPS Longitude</label>
+                  <input type="number" step="0.000001" id="session-lng" class="form-control" value="77.192600" required>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button type="button" id="detect-gps-btn" class="btn btn-outline btn-sm" style="flex: 1;">
+                  📍 Detect My Current GPS
+                </button>
+                <button type="button" id="reset-default-gps" class="btn btn-outline btn-sm" style="flex: 1;">
+                  🏫 Campus Default GPS
+                </button>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Allowed Geofence Radius</label>
+                <select id="session-radius" class="form-control">
+                  <option value="50">50 meters (Strict Classroom)</option>
+                  <option value="100" selected>100 meters (Standard Block)</option>
+                  <option value="200">200 meters (Extended Campus Wing)</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                ⚡ Generate Dynamic QR Code (30 Min Session)
+              </button>
+            </form>
+          </div>
+
+          <!-- Active Dynamic QR Card (when session is running) -->
+          <div id="active-session-card" class="glass-card" style="display: none; padding: 30px; margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="pulse-dot green"></span>
+                <span class="badge badge-success">Session Live</span>
+              </div>
+              <button id="end-session-btn" class="btn btn-danger btn-sm">
+                ⏹ End Session
+              </button>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 18px;">
+              <h3 id="active-subject-title" style="font-size: 1.3rem; font-weight: 700; color: #fff;">CS301 - Data Structures</h3>
+              <p id="active-classroom-title" style="color: var(--secondary); font-size: 0.9rem;">Room 402 - CS Block</p>
+            </div>
+
+            <!-- Dynamic QR Code & 5-Second Auto Refresh Indicator -->
+            <div class="qr-container">
+              <div class="qr-timer-pill">
+                <div class="timer-ring-container">
+                  <svg class="timer-ring-svg" viewBox="0 0 24 24">
+                    <circle class="timer-ring-circle-bg" cx="12" cy="12" r="10" />
+                    <circle id="timer-ring-circle" class="timer-ring-circle" cx="12" cy="12" r="10" />
+                  </svg>
+                </div>
+                <span>QR Auto-Refreshes in: <strong id="token-seconds-left" style="color: var(--secondary);">5</strong>s</span>
+              </div>
+
+              <div class="qr-box">
+                <img id="dynamic-qr-img" src="" alt="Dynamic Attendance QR Code" class="qr-image">
+              </div>
+
+              <div style="width: 100%; max-width: 320px; text-align: left; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+                  <span>30-Min Session Expiry:</span>
+                  <strong id="session-countdown-text" style="color: #fff;">30:00</strong>
+                </div>
+                <div class="overall-timer-bar">
+                  <div id="overall-timer-progress" class="overall-timer-progress"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Share Working QR Link for Students -->
+            <div style="margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 18px;">
+              <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🔗</span> Working QR Code & Student Scan Link:
+              </h4>
+              <p style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 12px;">
+                Students can point their camera at the QR above, or use the direct link below on any device.
+              </p>
+              
+              <div class="share-link-box">
+                <span id="active-scan-url" class="share-link-text">Loading link...</span>
+                <button id="copy-scan-link-btn" class="btn btn-secondary btn-sm" title="Copy URL">
+                  📋 Copy
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 14px;">
+                <a id="open-student-tab-btn" href="#" target="_blank" class="btn btn-success btn-sm" style="flex: 1; text-align: center;">
+                  🚀 Open Student Portal in New Tab (Test Now)
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Column: Live Class Attendance Records -->
+        <div>
+          <div class="glass-card" style="padding: 28px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;">Class-wise Attendance Records</h3>
+                <p style="color: var(--text-secondary); font-size: 0.88rem;">Live real-time feed with biometric and GPS verification logs</p>
+              </div>
+              <span id="live-attendees-badge" class="badge badge-primary">
+                0 Attendees Marked
+              </span>
+            </div>
+
+            <!-- Subject Filter -->
+            <div style="display: flex; gap: 12px; margin-bottom: 18px;">
+              <select id="filter-subject" class="form-control" style="max-width: 250px;">
+                <option value="ALL">All Subjects</option>
+              </select>
+              <button id="refresh-table-btn" class="btn btn-outline btn-sm">
+                🔄 Refresh Feed
+              </button>
+            </div>
+
+            <!-- Table of Records -->
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th>Subject</th>
+                    <th>Time</th>
+                    <th>GPS Distance</th>
+                    <th>Face Match</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="attendance-table-body">
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                      No attendance records found yet. Launch a session to begin logging.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/js/faculty.js"></script>
+</body>
+</html>

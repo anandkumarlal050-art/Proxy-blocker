@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPresence AI | Secure Attendance Monitoring System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .hero-section {
+      padding: 80px 0 50px 0;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: 3.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 40px auto;
+    }
+    .portal-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+      margin-top: 20px;
+      margin-bottom: 60px;
+    }
+    .portal-card {
+      padding: 36px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      text-align: left;
+    }
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+    .portal-card.faculty-card::before {
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    }
+    .portal-card.student-card::before {
+      background: linear-gradient(90deg, #06b6d4, #10b981);
+    }
+    .portal-card.dashboard-card::before {
+      background: linear-gradient(90deg, #f59e0b, #ec4899);
+    }
+    .portal-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 22px;
+    }
+    .faculty-icon {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .student-icon {
+      background: rgba(6, 182, 212, 0.15);
+      color: #22d3ee;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .dashboard-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .portal-heading {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+    .portal-desc {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+      line-height: 1.55;
+    }
+    .feature-list {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .feature-list li span.dot {
+      color: var(--success);
+      font-weight: bold;
+    }
+    .demo-bar {
+      margin-top: 40px;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background: rgba(17, 24, 39, 0.5);
+      border: 1px dashed var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">🎓</div>
+        <span>SmartPresence AI</span>
+      </a>
+      <div class="nav-links">
+        <a href="/faculty" class="nav-link">Faculty Portal</a>
+        <a href="/student" class="nav-link">Student Login</a>
+        <a href="/dashboard" class="nav-link">Student Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="container">
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span class="pulse-dot green"></span>
+        Zero-Proxy Dynamic QR & AI Biometric System
+      </div>
+      <h1 class="hero-title">Attendance Monitoring System</h1>
+      <p class="hero-subtitle">
+        Eliminate proxy attendance with 5-second dynamic rolling QR codes, strict classroom GPS geofencing, and AI-powered facial verification.
+      </p>
+
+      <!-- Portals Grid -->
+      <div class="portal-cards-grid">
+        
+        <!-- Faculty Portal Card -->
+        <div class="glass-card portal-card faculty-card">
+          <div>
+            <div class="portal-icon faculty-icon">👨‍🏫</div>
+            <h2 class="portal-heading">Faculty Portal</h2>
+            <p class="portal-desc">
+              Select your lecture subject, launch a classroom attendance session with 5-second auto-refreshing QR code, and monitor attendance in real time.
+            </p>
+            <ul class="feature-list">
+              <li><span class="dot">✓</span> Dynamic QR auto-refreshes every 5 seconds</li>
+              <li><span class="dot">✓</span> Automatic 30-minute session expiration</li>
+              <li><span class="dot">✓</span> Live attendance log & CSV report export</li>
+            </ul>
+          </div>
+          <a href="/faculty" class="btn btn-primary btn-lg" style="width: 100%;">
+            Enter Faculty Portal →
+          </a>
+        </div>
+
+        <!-- Student Portal Card -->
+        <div class="glass-card portal-card student-card">
+          <div>
+            <div class="portal-icon student-icon">📱</div>
+            <h2 class="portal-heading">Student Attendance</h2>
+            <p class="portal-desc">
+              Scan dynamic QR code or open classroom token, verify your live classroom GPS location, and capture your face for AI biometric matching.
+            </p>
+            <ul class="feature-list">
+              <li><span class="dot">✓</span> Live GPS location geofence verification</li>
+              <li><span class="dot">✓</span> Camera biometric capture & Face AI matching</li>
+              <li><span class="dot">✓</span> Single-login per session proxy blocker</li>
+            </ul>
+          </div>
+          <a href="/student" class="btn btn-success btn-lg" style="width: 100%;">
+            Mark Attendance Now →
+          </a>
+        </div>
+
+        <!-- Student Dashboard Card -->
+        <div class="glass-card portal-card dashboard-card">
+          <div>
+            <div class="portal-icon dashboard-icon">📊</div>
+            <h2 class="portal-heading">Student Dashboard</h2>
+            <p class="portal-desc">
+              View your subject-wise attendance percentages, classes attended vs held, and critical warnings if your attendance drops below 75%.
+            </p>
+            <ul class="feature-list">
+              <li><span class="dot">✓</span> Subject-wise attendance % breakdown</li>
+              <li><span class="dot">✓</span> ⚠️ Critical alert if attendance &lt; 75%</li>
+              <li><span class="dot">✓</span> Classes needed calculator to reach 75%</li>
+            </ul>
+          </div>
+          <a href="/dashboard" class="btn btn-secondary btn-lg" style="width: 100%;">
+            View Student Dashboard →
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Quick Test Accounts Helper -->
+      <div class="demo-bar">
+        <h3 style="font-size: 1.1rem; margin-bottom: 12px; color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>💡</span> Quick Demo Test Accounts & Instructions
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); max-width: 800px; margin: 0 auto 18px auto;">
+          The system is pre-configured with faculty accounts, subjects, registered student facial profiles, and attendance data.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; font-size: 0.88rem;">
+          <div style="background: rgba(255,255,255,0.04); padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <strong style="color: #818cf8;">Faculty Account:</strong> alan@cs.edu | Pass: <code>faculty123</code>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <strong style="color: #22d3ee;">Student 1 (Rahul):</strong> Roll: <code>2024CS101</code> | Pass: <code>student123</code>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <strong style="color: #34d399;">Student 2 (Priya):</strong> Roll: <code>2024CS102</code> | Pass: <code>student123</code>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <strong style="color: #fbbf24;">Student 3 (Rohan):</strong> Roll: <code>2024CS103</code> | Pass: <code>student123</code>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 0.88rem; border-top: 1px solid var(--border-color); margin-top: 40px;">
+    SmartPresence AI Attendance Monitoring System • Academic Year 2025-2026
+  </footer>
+
+</body>
+</html>
