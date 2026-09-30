@@ -30,17 +30,31 @@ function CircularTimer({ seconds, total, label, color = 'var(--accent)' }) {
 }
 
 export default function FacultyPage() {
-  const [step, setStep] = useState('login') // login | dashboard | session
-  const [user, setUser] = useState(null)
+  const [step, setStep] = useState(() => localStorage.getItem('faculty_step') || 'login') // login | dashboard | session
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('faculty_user')
+    return saved ? JSON.parse(saved) : null
+  })
   const [subjects, setSubjects] = useState([])
   const [form, setForm] = useState({ username: '', password: '' })
   const [sessionForm, setSessionForm] = useState({ subject_id: '', classroom_name: '', lat: '', lng: '', radius: 100 })
-  const [session, setSession] = useState(null)
+  const [session, setSession] = useState(() => {
+    const saved = localStorage.getItem('faculty_session')
+    return saved ? JSON.parse(saved) : null
+  })
   const [qrData, setQrData] = useState(null)
   const [attendees, setAttendees] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const qrInterval = useRef(null)
+
+  // Add Student State
+  const [studentForm, setStudentForm] = useState({ roll_no: '', name: '', email: '', password: '', department: '', semester: '' })
+  const [capturedStudentImage, setCapturedStudentImage] = useState(null)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
 
   const fetchQR = useCallback(async (sid) => {
     try {
@@ -57,6 +71,12 @@ export default function FacultyPage() {
   }, [])
 
   useEffect(() => {
+    if (user && subjects.length === 0 && step === 'dashboard') {
+      api.get(`/faculty/${user.id}/subjects`).then(res => setSubjects(res.data)).catch(() => {})
+    }
+  }, [user, step, subjects.length])
+
+  useEffect(() => {
     if (session && step === 'session') {
       fetchQR(session.session_id)
       qrInterval.current = setInterval(() => fetchQR(session.session_id), 3000)
@@ -70,9 +90,12 @@ export default function FacultyPage() {
     try {
       const res = await api.post('/login', { role: 'faculty', username: form.username, password: form.password })
       setUser(res.data.user)
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('faculty_user', JSON.stringify(res.data.user))
       const subs = await api.get(`/faculty/${res.data.user.id}/subjects`)
       setSubjects(subs.data)
       setStep('dashboard')
+      localStorage.setItem('faculty_step', 'dashboard')
     } catch (e) { setError(e.response?.data?.detail || 'Login failed') }
     setLoading(false)
   }
@@ -94,7 +117,9 @@ export default function FacultyPage() {
         duration_minutes: 30
       })
       setSession(res.data)
+      localStorage.setItem('faculty_session', JSON.stringify(res.data))
       setStep('session')
+      localStorage.setItem('faculty_step', 'session')
     } catch (e) { setError(e.response?.data?.detail || 'Failed to create session') }
     setLoading(false)
   }
@@ -104,7 +129,9 @@ export default function FacultyPage() {
     await api.post(`/session/${session.session_id}/end`)
     clearInterval(qrInterval.current)
     setSession(null); setQrData(null); setAttendees([])
+    localStorage.removeItem('faculty_session')
     setStep('dashboard')
+    localStorage.setItem('faculty_step', 'dashboard')
   }
 
   const handleExportCSV = () => {
@@ -116,6 +143,47 @@ export default function FacultyPage() {
       (pos) => setSessionForm(f => ({ ...f, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) })),
       () => setError('GPS not available')
     )
+  }
+
+  // ── Add Student Functions ──
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      streamRef.current = stream
+      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play() }
+      setIsStreaming(true)
+    } catch { setError('Camera access denied.') }
+  }
+  const stopCamera = () => {
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
+    setIsStreaming(false)
+  }
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    canvas.width = videoRef.current.videoWidth
+    canvas.height = videoRef.current.videoHeight
+    ctx.drawImage(videoRef.current, 0, 0)
+    setCapturedStudentImage(canvas.toDataURL('image/jpeg', 0.85))
+    stopCamera()
+  }
+  const retakePhoto = () => { setCapturedStudentImage(null); startCamera() }
+
+  const handleAddStudentSubmit = async (e) => {
+    e.preventDefault()
+    if (!capturedStudentImage) return setError('Please capture a photo first.')
+    setLoading(true); setError('')
+    try {
+      await api.post('/faculty/create-student', { ...studentForm, photo_b64: capturedStudentImage })
+      setStep('dashboard')
+      setStudentForm({ roll_no: '', name: '', email: '', password: '', department: '', semester: '' })
+      setCapturedStudentImage(null)
+      alert('Student created successfully!')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to create student.')
+    }
+    setLoading(false)
   }
 
   // ── Login Screen ──
@@ -166,7 +234,14 @@ export default function FacultyPage() {
               <h1 style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.name}</h1>
               <p className="text-muted text-sm">{user.designation} · {user.department}</p>
             </div>
-            <button className="btn btn-ghost" onClick={() => { setUser(null); setStep('login') }}>Logout</button>
+            <button className="btn btn-ghost" onClick={() => {
+              setUser(null);
+              setStep('login');
+              localStorage.removeItem('token');
+              localStorage.removeItem('faculty_user');
+              localStorage.removeItem('faculty_session');
+              localStorage.setItem('faculty_step', 'login');
+            }}>Logout</button>
           </div>
 
           {error && <div className="alert alert-danger">⚠️ {error}</div>}
@@ -232,9 +307,93 @@ export default function FacultyPage() {
                 ))}
               </div>
               <div className="divider" />
-              <button className="btn btn-ghost btn-sm" onClick={handleExportCSV}>⬇️ Export CSV Report</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-ghost btn-sm" onClick={handleExportCSV}>⬇️ Export CSV Report</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setStep('add_student')}>👤 Register New Student</button>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Add Student ──
+  if (step === 'add_student') return (
+    <div className="page">
+      <Navbar />
+      <div className="container-sm" style={{ paddingTop: 80 }}>
+        <button className="btn btn-ghost btn-sm mb-4" onClick={() => { setStep('dashboard'); stopCamera() }}>
+          ← Back to Dashboard
+        </button>
+        <div className="card animate-fade-in">
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 16 }}>Register New Student Face</h2>
+          {error && <div className="alert alert-danger mb-4">⚠️ {error}</div>}
+          
+          <form onSubmit={handleAddStudentSubmit}>
+            <div className="grid-2" style={{ gap: 12, marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Full Name</label>
+                <input className="form-input" required value={studentForm.name} onChange={e => setStudentForm(f => ({...f, name: e.target.value}))} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Roll Number</label>
+                <input className="form-input" required placeholder="e.g. 2024CS105" value={studentForm.roll_no} onChange={e => setStudentForm(f => ({...f, roll_no: e.target.value}))} />
+              </div>
+            </div>
+            <div className="grid-2" style={{ gap: 12, marginBottom: 12 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Email</label>
+                <input className="form-input" required type="email" value={studentForm.email} onChange={e => setStudentForm(f => ({...f, email: e.target.value}))} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Password</label>
+                <input className="form-input" required type="password" value={studentForm.password} onChange={e => setStudentForm(f => ({...f, password: e.target.value}))} />
+              </div>
+            </div>
+            <div className="grid-2" style={{ gap: 12, marginBottom: 20 }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Department</label>
+                <input className="form-input" required value={studentForm.department} onChange={e => setStudentForm(f => ({...f, department: e.target.value}))} />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Semester</label>
+                <input className="form-input" required value={studentForm.semester} onChange={e => setStudentForm(f => ({...f, semester: e.target.value}))} />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Reference Photo</label>
+              <div style={{ background: '#000', borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
+                {!capturedStudentImage ? (
+                  <>
+                    <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
+                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+                    {!isStreaming ? (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button type="button" className="btn btn-primary" onClick={startCamera}>Start Camera</button>
+                      </div>
+                    ) : (
+                      <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+                        <button type="button" className="btn btn-primary" onClick={capturePhoto}>📸 Capture Reference</button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <img src={capturedStudentImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Captured" />
+                    <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+                      <button type="button" className="btn btn-ghost" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={retakePhoto}>Retake Photo</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-full mt-4" disabled={loading || !capturedStudentImage}>
+              {loading ? 'Registering...' : 'Submit & Register Student'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -256,7 +415,7 @@ export default function FacultyPage() {
               <p className="text-muted text-sm">📍 {qrData?.classroom_name}</p>
             </div>
             <div className="flex gap-3">
-              <button className="btn btn-ghost btn-sm" onClick={handleExportCSV}>⬇️ CSV</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => window.location.href = `/api/session/${session.session_id}/export-csv`}>⬇️ CSV</button>
               <button className="btn btn-danger btn-sm" onClick={handleEndSession}>🛑 End Session</button>
             </div>
           </div>

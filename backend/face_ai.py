@@ -34,17 +34,25 @@ def verify_faces(live_image_b64: str, reference_image_path: str):
         live_pil = base64_to_pil(live_image_b64)
         
         # Load reference photo from local disk
-        if not os.path.isabs(reference_image_path):
-            reference_image_path = os.path.join(os.path.dirname(__file__), reference_image_path.lstrip("/\\"))
+        base_name = os.path.basename(reference_image_path)
+        possible_paths = [
+            reference_image_path if os.path.isabs(reference_image_path) else "",
+            os.path.join(os.path.dirname(__file__), reference_image_path.lstrip("/\\")),
+            os.path.join(os.path.dirname(__file__), "static", "images", "students", base_name),
+            os.path.join(os.path.dirname(__file__), "static", "static", "images", "students", base_name),
+            os.path.join(os.path.dirname(__file__), "..", "static", "images", "students", base_name)
+        ]
         
-        if not os.path.exists(reference_image_path):
-            rel_path = os.path.join(os.path.dirname(__file__), "static", "images", "students", os.path.basename(reference_image_path))
-            if os.path.exists(rel_path):
-                reference_image_path = rel_path
-            else:
-                return False, 0.0, f"Reference image not found: {reference_image_path}"
+        found_path = None
+        for p in possible_paths:
+            if p and os.path.exists(p):
+                found_path = p
+                break
+                
+        if not found_path:
+            return False, 0.0, f"Reference image not found: {reference_image_path}"
 
-        ref_pil = Image.open(reference_image_path).convert("RGB")
+        ref_pil = Image.open(found_path).convert("RGB")
 
         # OpenCV 5.0 verification pipeline
         if CV2_AVAILABLE and np is not None:

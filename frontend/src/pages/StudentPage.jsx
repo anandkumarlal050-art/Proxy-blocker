@@ -7,8 +7,14 @@ const STEPS = ['Login', 'GPS Verify', 'Face Capture', 'Result']
 
 export default function StudentPage() {
   const [searchParams] = useSearchParams()
-  const [step, setStep] = useState(0)
-  const [user, setUser] = useState(null)
+  const [step, setStep] = useState(() => {
+    const saved = localStorage.getItem('student_user')
+    return saved ? 1 : 0
+  })
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('student_user')
+    return saved ? JSON.parse(saved) : null
+  })
   const [form, setForm] = useState({ username: '', password: '' })
   const [gpsStatus, setGpsStatus] = useState(null) // null | checking | ok | fail
   const [gpsCoords, setGpsCoords] = useState({ lat: null, lng: null })
@@ -37,6 +43,8 @@ export default function StudentPage() {
     try {
       const res = await api.post('/login', { role: 'student', username: form.username, password: form.password })
       setUser(res.data.user)
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('student_user', JSON.stringify(res.data.user))
       if (!sessionId) {
         setError('No QR session found. Please scan the faculty QR code first.')
         setLoading(false)
@@ -132,7 +140,17 @@ export default function StudentPage() {
       <Navbar />
       <div className="container-sm" style={{ paddingTop: 80 }}>
         <div style={{ maxWidth: 440, margin: '0 auto' }} className="animate-fade-in">
-          <div className="section-badge mb-4">📱 Student Attendance</div>
+          <div className="flex justify-between items-center mb-4">
+            <div className="section-badge">📱 Student Attendance</div>
+            {user && (
+              <button className="btn btn-ghost btn-sm" onClick={() => {
+                setUser(null);
+                setStep(0);
+                localStorage.removeItem('token');
+                localStorage.removeItem('student_user');
+              }}>Logout</button>
+            )}
+          </div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 8 }}>Student Login</h1>
           <p className="text-muted mb-6">Log in with your roll number and password to mark attendance.</p>
 
@@ -199,6 +217,11 @@ export default function StudentPage() {
           {/* Step 1: GPS */}
           {step === 1 && (
             <div className="card">
+              {!sessionId ? (
+                <div className="alert alert-danger mb-4">
+                  ⚠️ No QR session found in URL. Please scan the live QR code from the faculty dashboard.
+                </div>
+              ) : null}
               <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}>📍 GPS Location Verification</h2>
               <p className="text-muted text-sm mb-6">We need to verify you're physically inside the classroom (within 100m).</p>
               {gpsStatus === 'checking' && (
@@ -221,7 +244,7 @@ export default function StudentPage() {
                 <button className="btn btn-ghost" onClick={() => simulateGPS(false)}>🏠 Simulate Outside (550m)</button>
               </div>
               {gpsStatus === 'ok' && (
-                <button className="btn btn-success btn-full mt-6" onClick={proceedToCamera}>
+                <button className="btn btn-success btn-full mt-6" onClick={proceedToCamera} disabled={!sessionId}>
                   ✅ GPS Verified — Continue to Camera →
                 </button>
               )}

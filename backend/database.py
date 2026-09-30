@@ -75,9 +75,18 @@ async def seed_if_empty():
 # ─────────────────────────────────────────────
 async def get_faculty_by_email(email: str):
     """Supports both email variants used in README (alan@cs.edu / turing@cs.edu)"""
-    email_map = {"alan@cs.edu": "turing@cs.edu"}
-    lookup = email_map.get(email, email)
-    row = await db.faculty.find_first(where={"email": lookup})
+    email = email.strip().lower()
+    other_email = None
+    if email == "alan@cs.edu":
+        other_email = "turing@cs.edu"
+    elif email == "turing@cs.edu":
+        other_email = "alan@cs.edu"
+    
+    conditions = [{"email": email}, {"id": email}]
+    if other_email:
+        conditions.append({"email": other_email})
+        
+    row = await db.faculty.find_first(where={"OR": conditions})
     return row
 
 async def get_faculty_by_id(faculty_id: str):
@@ -94,8 +103,25 @@ async def get_faculty_subjects(faculty_id: str):
 # STUDENT QUERIES
 # ─────────────────────────────────────────────
 async def get_student_by_credentials(identifier: str, password: str):
+    identifier = identifier.strip()
+    password = password.strip()
+    
+    identifiers_to_try = list(set([
+        identifier,
+        identifier.upper(),
+        identifier.lower()
+    ]))
+    
+    conditions = []
+    for id_var in identifiers_to_try:
+        conditions.append({"roll_no": id_var})
+        conditions.append({"email": id_var})
+    
     row = await db.student.find_first(
-        where={"OR": [{"roll_no": identifier}, {"email": identifier}], "password": password}
+        where={
+            "OR": conditions,
+            "password": password
+        }
     )
     return row
 
