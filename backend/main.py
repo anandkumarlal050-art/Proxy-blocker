@@ -193,7 +193,20 @@ async def get_session_qr(session_id: str, request: Request):
 
     token = qr_engine.generate_token(session_id)
     remaining_seconds = max(0, int(session["expires_at"] - now))
-    frontend_url = os.getenv("FRONTEND_URL", str(request.base_url)).rstrip('/')
+    # Dynamically determine the frontend URL from the request headers
+    origin = request.headers.get("origin")
+    referer = request.headers.get("referer")
+    
+    if origin:
+        frontend_url = origin.rstrip('/')
+    elif referer:
+        # Referer might have a path (e.g. https://vercel.app/faculty), so we extract just the base
+        from urllib.parse import urlparse
+        parsed = urlparse(referer)
+        frontend_url = f"{parsed.scheme}://{parsed.netloc}"
+    else:
+        frontend_url = os.getenv("FRONTEND_URL", str(request.base_url)).rstrip('/')
+
     scan_url = f"{frontend_url}/student?session_id={session_id}&token={token}"
     qr_image = qr_engine.generate_qr_image_base64(scan_url)
     records = await database.get_session_attendance_records(session_id)
