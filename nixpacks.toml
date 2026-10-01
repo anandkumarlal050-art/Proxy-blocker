@@ -1,0 +1,17 @@
+# nixpacks.toml — tells Nixpacks exactly how to build this Python app
+
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
+[phases.install]
+cmds = ["pip install -r backend/requirements.txt"]
+
+[phases.build]
+cmds = [
+  "python -m prisma py fetch",
+  "cd backend && python -m prisma generate --schema prisma/schema.prisma",
+  "cd backend && python -m prisma db push --schema prisma/schema.prisma --skip-generate"
+]
+
+[start]
+cmd = "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
