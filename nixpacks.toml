@@ -1,14 +1,20 @@
-# nixpacks.toml — Let Nixpacks auto-detect Python, override only install+build
+# nixpacks.toml — Python via Nix + virtualenv (proper Nix pattern)
+
+[phases.setup]
+nixPkgs = ["python311"]
 
 [phases.install]
-cmds = ["pip install --break-system-packages -r backend/requirements.txt"]
+cmds = [
+  "python3 -m venv /opt/venv",
+  "/opt/venv/bin/pip install -r backend/requirements.txt"
+]
 
 [phases.build]
 cmds = [
-  "python -m prisma py fetch",
-  "cd backend && python -m prisma generate --schema prisma/schema.prisma",
-  "cd backend && python -m prisma db push --schema prisma/schema.prisma --skip-generate"
+  "/opt/venv/bin/python -m prisma py fetch",
+  "cd backend && /opt/venv/bin/python -m prisma generate --schema prisma/schema.prisma",
+  "cd backend && /opt/venv/bin/python -m prisma db push --schema prisma/schema.prisma --skip-generate"
 ]
 
 [start]
-cmd = "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && /opt/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port $PORT"
