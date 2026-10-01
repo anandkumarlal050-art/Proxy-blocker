@@ -29,14 +29,15 @@ import jwt_util
 app = FastAPI(title="SmartPresence AI", version="2.0.0")
 
 # ─── CORS for React frontend ───
+_frontend_url = os.getenv("FRONTEND_URL", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        os.getenv("FRONTEND_URL", "http://localhost:5173"),
+    allow_origins=["*"] if _frontend_url == "*" else [
+        _frontend_url,
         "http://localhost:5173",
         "http://localhost:3000",
     ],
-    allow_credentials=True,
+    allow_credentials=False if _frontend_url == "*" else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
