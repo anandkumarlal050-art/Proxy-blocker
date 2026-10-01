@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import api from '../api'
+import { 
+  Smartphone, Key, AlertTriangle, MapPin, Radio, School, Home, Camera, 
+  RefreshCw, Upload, CheckCircle2, XCircle
+} from 'lucide-react'
 
 const STEPS = ['Login', 'GPS Verify', 'Face Capture', 'Result']
 
@@ -141,7 +145,7 @@ export default function StudentPage() {
       <div className="container-sm" style={{ paddingTop: 80 }}>
         <div style={{ maxWidth: 440, margin: '0 auto' }} className="animate-fade-in">
           <div className="flex justify-between items-center mb-4">
-            <div className="section-badge">📱 Student Attendance</div>
+            <div className="section-badge"><><Smartphone size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> Student Attendance</></div>
             {user && (
               <button className="btn btn-ghost btn-sm" onClick={() => {
                 setUser(null);
@@ -155,11 +159,11 @@ export default function StudentPage() {
           <p className="text-muted mb-6">Log in with your roll number and password to mark attendance.</p>
 
           {sessionId
-            ? <div className="alert alert-success">✅ QR Session detected: <strong>{sessionId.slice(0, 15)}...</strong></div>
-            : <div className="alert alert-warning">⚠️ No QR session found. Scan the faculty QR code first, then log in.</div>
+            ? <div className="alert alert-success"><><CheckCircle2 size={16} color="var(--success)" style={{display:'inline', marginBottom:-3, marginRight:4}}/> QR Session detected:</> <strong>{sessionId.slice(0, 15)}...</strong></div>
+            : <div className="alert alert-warning"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> No QR session found. Scan the faculty QR code first, then log in.</></div>
           }
 
-          {error && <div className="alert alert-danger">⚠️ {error}</div>}
+          {error && <div className="alert alert-danger"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
 
           <form className="card" onSubmit={handleLogin}>
             <div className="form-group">
@@ -173,7 +177,7 @@ export default function StudentPage() {
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
             </div>
             <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-              {loading ? <><span className="spinner-sm"></span> Signing in...</> : '🔑 Sign In'}
+              {loading ? <><span className="spinner-sm"></span> Signing in...</> : <><Key size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Sign In</>}
             </button>
           </form>
           <div className="card mt-4 text-sm text-muted">
@@ -219,10 +223,10 @@ export default function StudentPage() {
             <div className="card">
               {!sessionId ? (
                 <div className="alert alert-danger mb-4">
-                  ⚠️ No QR session found in URL. Please scan the live QR code from the faculty dashboard.
+                  <><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> No QR session found in URL. Please scan the live QR code from the faculty dashboard.</>
                 </div>
               ) : null}
-              <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}>📍 GPS Location Verification</h2>
+              <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}><><MapPin size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> GPS Location Verification</></h2>
               <p className="text-muted text-sm mb-6">We need to verify you're physically inside the classroom (within 100m).</p>
               {gpsStatus === 'checking' && (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -232,20 +236,20 @@ export default function StudentPage() {
               )}
               {gpsStatus === 'ok' && (
                 <div className="alert alert-success">
-                  ✅ GPS acquired: {gpsCoords.lat?.toFixed(5)}, {gpsCoords.lng?.toFixed(5)}
+                  <><CheckCircle2 size={16} color="var(--success)" style={{display:'inline', marginBottom:-3, marginRight:4}}/> GPS acquired:</> {gpsCoords.lat?.toFixed(5)}, {gpsCoords.lng?.toFixed(5)}
                 </div>
               )}
               {gpsStatus === 'fail' && (
-                <div className="alert alert-danger">❌ GPS failed. Try simulators below.</div>
+                <div className="alert alert-danger"><><XCircle size={16} color="var(--danger)" style={{display:'inline', marginBottom:-3, marginRight:4}}/> GPS failed. Try simulators below.</></div>
               )}
               <div className="flex gap-3 flex-wrap mt-4">
-                <button className="btn btn-primary" onClick={startGPS}>📡 Get My GPS</button>
-                <button className="btn btn-ghost" onClick={() => simulateGPS(true)}>🏫 Simulate Inside (12m)</button>
-                <button className="btn btn-ghost" onClick={() => simulateGPS(false)}>🏠 Simulate Outside (550m)</button>
+                <button className="btn btn-primary" onClick={startGPS}><><Radio size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Get My GPS</></button>
+                <button className="btn btn-ghost" onClick={() => simulateGPS(true)}><><School size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Simulate Inside (12m)</></button>
+                <button className="btn btn-ghost" onClick={() => simulateGPS(false)}><><Home size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Simulate Outside (550m)</></button>
               </div>
               {gpsStatus === 'ok' && (
                 <button className="btn btn-success btn-full mt-6" onClick={proceedToCamera} disabled={!sessionId}>
-                  ✅ GPS Verified — Continue to Camera →
+                  <><CheckCircle2 size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> GPS Verified — Continue to Camera →</>
                 </button>
               )}
             </div>
@@ -254,9 +258,9 @@ export default function StudentPage() {
           {/* Step 2: Camera */}
           {step === 2 && (
             <div className="card">
-              <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}>🤖 AI Face Verification</h2>
+              <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}>AI Face Verification</h2>
               <p className="text-muted text-sm mb-6">Look directly at the camera. Keep your face centered in the oval.</p>
-              {error && <div className="alert alert-danger">⚠️ {error}</div>}
+              {error && <div className="alert alert-danger"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
               {!capturedImage ? (
                 <>
                   <div className="camera-wrap" style={{ marginBottom: 20 }}>
@@ -270,7 +274,7 @@ export default function StudentPage() {
                   </div>
                   <canvas ref={canvasRef} style={{ display: 'none' }} />
                   <button className="btn btn-primary btn-full" onClick={capturePhoto} disabled={!streaming}>
-                    📸 Capture Photo
+                    <><Camera size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Capture Photo</>
                   </button>
                 </>
               ) : (
@@ -279,9 +283,9 @@ export default function StudentPage() {
                     <img src={capturedImage} alt="Captured" style={{ width: '100%', display: 'block', maxWidth: 420, margin: '0 auto' }} />
                   </div>
                   <div className="flex gap-3">
-                    <button className="btn btn-ghost flex-1" onClick={retakePhoto}>🔄 Retake</button>
+                    <button className="btn btn-ghost flex-1" onClick={retakePhoto}><><RefreshCw size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Retake</></button>
                     <button className="btn btn-primary flex-1" onClick={submitAttendance} disabled={loading}>
-                      {loading ? <><span className="spinner-sm"></span> Verifying...</> : '✅ Submit Attendance'}
+                      {loading ? <><span className="spinner-sm"></span> Verifying...</> : <><Upload size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Submit Attendance</>}
                     </button>
                   </div>
                 </>
@@ -292,7 +296,7 @@ export default function StudentPage() {
           {/* Step 3: Result */}
           {step === 3 && result && (
             <div className={`card ${result.success ? '' : ''}`} style={{ textAlign: 'center', padding: '48px 32px' }}>
-              <div style={{ fontSize: '4rem', marginBottom: 20 }}>{result.success ? '✅' : '❌'}</div>
+              <div style={{ fontSize: '4rem', marginBottom: 20 }}>{result.success ? <CheckCircle2 size={64} color="var(--success)"/> : <XCircle size={64} color="var(--danger)"/>}</div>
               {result.success ? (
                 <>
                   <h2 style={{ fontWeight: 800, fontSize: '1.6rem', color: 'var(--success)', marginBottom: 12 }}>
@@ -325,7 +329,7 @@ export default function StudentPage() {
                     {result.detail}
                   </div>
                   <button className="btn btn-primary" onClick={() => { setStep(1); setResult(null); setCapturedImage(null) }}>
-                    🔄 Try Again
+                    <><RefreshCw size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Try Again</>
                   </button>
                 </>
               )}

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import api from '../api'
+import { 
+  BarChart3, AlertTriangle, BookOpen, Check, X, Calendar, Clock, ClipboardList
+} from 'lucide-react'
 
 function ProgressBar({ percentage }) {
   const color = percentage >= 75 ? 'progress-green' : percentage >= 60 ? 'progress-amber' : 'progress-red'
@@ -53,10 +56,10 @@ export default function DashboardPage() {
       <Navbar />
       <div className="container-sm" style={{ paddingTop: 80 }}>
         <div style={{ maxWidth: 440, margin: '0 auto' }} className="animate-fade-in">
-          <div className="section-badge mb-4">📊 Student Dashboard</div>
+          <div className="section-badge mb-4"><><BarChart3 size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> Student Dashboard</></div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 8 }}>View Your Attendance</h1>
           <p className="text-muted mb-6">Log in to see subject-wise attendance percentages and 75% alerts.</p>
-          {error && <div className="alert alert-danger">⚠️ {error}</div>}
+          {error && <div className="alert alert-danger"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
           <form className="card" onSubmit={handleLogin}>
             <div className="form-group">
               <label className="form-label">Roll Number or Email</label>
@@ -69,7 +72,7 @@ export default function DashboardPage() {
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
             </div>
             <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-              {loading ? <><span className="spinner-sm"></span> Loading...</> : '📊 View Dashboard'}
+              {loading ? <><span className="spinner-sm"></span> Loading...</> : <><BarChart3 size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> View Dashboard</>}
             </button>
           </form>
           <div className="card mt-4 text-sm text-muted">
@@ -111,7 +114,7 @@ export default function DashboardPage() {
           {data?.has_low_attendance && (
             <div className="alert alert-warning mb-6" style={{ flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span style={{ fontSize: '1.5rem' }}>⚠️</span>
+                <span style={{ fontSize: '1.5rem' }}><AlertTriangle size={24} style={{display:'inline', marginRight: 8, color: 'var(--warning)'}} /></span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '1rem' }}>Attendance Below 75% — Action Required!</div>
                   <div className="text-sm" style={{ color: 'rgba(253,230,138,0.8)', marginTop: 4 }}>
@@ -166,7 +169,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Subject Cards */}
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 20 }}>📚 Subject-wise Attendance</h2>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 20 }}><><BookOpen size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Subject-wise Attendance</></h2>
           <div className="grid-2 mb-8">
             {data?.subjects?.map(s => (
               <div key={s.id} className={`card card-hover ${s.is_low ? 'danger-card' : ''}`}
@@ -183,13 +186,13 @@ export default function DashboardPage() {
                 </div>
                 <ProgressBar percentage={s.percentage} />
                 <div className="flex justify-between mt-3 text-xs text-muted">
-                  <span>✅ {s.attended} attended</span>
-                  <span>❌ {s.absent} absent</span>
-                  <span>📅 {s.total} total</span>
+                  <span><><Check size={12} style={{display:'inline', marginBottom:-2, marginRight:2}}/> {s.attended}</> attended</span>
+                  <span><><X size={12} style={{display:'inline', marginBottom:-2, marginRight:2}}/> {s.absent}</> absent</span>
+                  <span><><Calendar size={12} style={{display:'inline', marginBottom:-2, marginRight:2}}/> {s.total}</> total</span>
                 </div>
                 {s.is_low && s.needed_to_75 > 0 && (
                   <div className="text-xs" style={{ color: 'var(--danger)', marginTop: 10, fontWeight: 600 }}>
-                    ⚠️ Attend {s.needed_to_75} more consecutive class{s.needed_to_75 > 1 ? 'es' : ''} to reach 75%
+                    <AlertTriangle size={24} style={{display:'inline', marginRight: 8, color: 'var(--warning)'}} /> Attend {s.needed_to_75} more consecutive class{s.needed_to_75 > 1 ? 'es' : ''} to reach 75%
                   </div>
                 )}
               </div>
@@ -197,12 +200,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Activity */}
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 20 }}>🕐 Recent Attendance History</h2>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 20 }}><><Clock size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Recent Attendance History</></h2>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div>
           ) : data?.recent_activity?.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">📋</div>
+              <div className="empty-state-icon"><ClipboardList size={40} color="var(--muted)" /></div>
               <p>No attendance records yet.</p>
             </div>
           ) : (

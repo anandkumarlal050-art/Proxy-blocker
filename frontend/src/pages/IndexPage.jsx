@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { Radio, MapPin, ScanFace, Clock, Lock, LayoutDashboard, Shield, GraduationCap, Smartphone, BarChart3 } from 'lucide-react'
 
 const features = [
-  { icon: '📡', title: 'Dynamic 5-Second QR', desc: 'Cryptographically signed rolling HMAC tokens. WhatsApp photo sharing cannot bypass this.' },
-  { icon: '📍', title: 'GPS Geofencing', desc: 'Haversine distance calculation enforces ≤100m classroom boundary in real time.' },
-  { icon: '🤖', title: 'AI Face Recognition', desc: 'OpenCV 5.0 NCC + histogram intersection biometric matching with ≥70% confidence threshold.' },
-  { icon: '⏱️', title: '30-Min Auto Expiry', desc: 'Sessions automatically expire after 30 minutes with live circular countdown timers.' },
-  { icon: '🔒', title: 'Single Submission Lock', desc: 'One attendance mark per student per session. Duplicate attempts are permanently blocked.' },
-  { icon: '📊', title: 'Live Audit Dashboard', desc: 'Real-time attendance feed with student photos, GPS distance, and AI confidence scores.' },
+  { icon: <Radio size={32} color="var(--accent)" />, title: 'Dynamic 5-Second QR', desc: 'Cryptographically signed rolling HMAC tokens. WhatsApp photo sharing cannot bypass this.' },
+  { icon: <MapPin size={32} color="var(--accent)" />, title: 'GPS Geofencing', desc: 'Haversine distance calculation enforces ≤100m classroom boundary in real time.' },
+  { icon: <ScanFace size={32} color="var(--accent)" />, title: 'AI Face Recognition', desc: 'OpenCV 5.0 NCC + histogram intersection biometric matching with ≥70% confidence threshold.' },
+  { icon: <Clock size={32} color="var(--accent)" />, title: '30-Min Auto Expiry', desc: 'Sessions automatically expire after 30 minutes with live circular countdown timers.' },
+  { icon: <Lock size={32} color="var(--accent)" />, title: 'Single Submission Lock', desc: 'One attendance mark per student per session. Duplicate attempts are permanently blocked.' },
+  { icon: <LayoutDashboard size={32} color="var(--accent)" />, title: 'Live Audit Dashboard', desc: 'Real-time attendance feed with student photos, GPS distance, and AI confidence scores.' },
 ]
 
 const credentials = [
@@ -28,7 +29,7 @@ export default function IndexPage() {
         <div className="container">
           <div className="animate-fade-in">
             <div className="section-badge" style={{ justifyContent: 'center', marginBottom: 20 }}>
-              <span>🛡️</span> Anti-Proxy Attendance System
+              <span style={{display: 'inline-flex', verticalAlign: 'middle', marginRight: 8}}><Shield size={20} color="var(--accent)" /></span> Anti-Proxy Attendance System
             </div>
             <h1 className="section-title" style={{ fontSize: '3.2rem', marginBottom: 24 }}>
               Attendance That <span>Cannot Be Faked</span>
@@ -38,13 +39,13 @@ export default function IndexPage() {
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/faculty" className="btn btn-primary btn-lg">
-                👨‍🏫 Faculty Portal
+                <><GraduationCap size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Faculty Portal</>
               </Link>
               <Link to="/student" className="btn btn-ghost btn-lg">
-                📱 Student Portal
+                <><Smartphone size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Student Portal</>
               </Link>
               <Link to="/dashboard" className="btn btn-ghost btn-lg">
-                📊 Dashboard
+                <><BarChart3 size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Dashboard</>
               </Link>
             </div>
           </div>

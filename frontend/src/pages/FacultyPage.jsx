@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Navbar from '../components/Navbar'
 import api from '../api'
+import { 
+  GraduationCap, AlertTriangle, Key, Radio, MapPin, Play, BookOpen, Download,
+  UserPlus, ArrowLeft, Camera, CircleDot, StopCircle, Smartphone, Copy, ExternalLink,
+  Clock, Users
+} from 'lucide-react'
 
 // ── Circular countdown SVG ──
 function CircularTimer({ seconds, total, label, color = 'var(--accent)' }) {
@@ -193,10 +198,10 @@ export default function FacultyPage() {
       <div className="container-sm" style={{ paddingTop: 80 }}>
         <div style={{ maxWidth: 440, margin: '0 auto' }}>
           <div className="animate-fade-in">
-            <div className="section-badge mb-4">👨‍🏫 Faculty Portal</div>
+            <div className="section-badge mb-4"><><GraduationCap size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> Faculty Portal</></div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 8 }}>Faculty Login</h1>
             <p className="text-muted mb-6">Sign in to start an attendance session and generate live QR codes.</p>
-            {error && <div className="alert alert-danger">⚠️ {error}</div>}
+            {error && <div className="alert alert-danger"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
             <form className="card" onSubmit={handleLogin}>
               <div className="form-group">
                 <label className="form-label">Email Address</label>
@@ -209,7 +214,7 @@ export default function FacultyPage() {
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
               </div>
               <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-                {loading ? <><span className="spinner-sm"></span> Signing in...</> : '🔑 Sign In'}
+                {loading ? <><span className="spinner-sm"></span> Signing in...</> : <><Key size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Sign In</>}
               </button>
             </form>
             <div className="card mt-4 text-sm text-muted">
@@ -230,7 +235,7 @@ export default function FacultyPage() {
         <div className="animate-fade-in">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="section-badge mb-2">👋 Welcome</div>
+              <div className="section-badge mb-2">Welcome</div>
               <h1 style={{ fontSize: '1.8rem', fontWeight: 800 }}>{user.name}</h1>
               <p className="text-muted text-sm">{user.designation} · {user.department}</p>
             </div>
@@ -244,12 +249,12 @@ export default function FacultyPage() {
             }}>Logout</button>
           </div>
 
-          {error && <div className="alert alert-danger">⚠️ {error}</div>}
+          {error && <div className="alert alert-danger"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
 
           <div className="grid-2">
             {/* Start Session Form */}
             <div className="card">
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 20 }}>📡 Start Attendance Session</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 20 }}><><Radio size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Start Attendance Session</></h2>
               <form onSubmit={handleStartSession}>
                 <div className="form-group">
                   <label className="form-label">Subject</label>
@@ -277,7 +282,7 @@ export default function FacultyPage() {
                   </div>
                 </div>
                 <button type="button" className="btn btn-ghost btn-sm mb-4" onClick={useMyGPS}>
-                  📍 Use My GPS Location
+                  <><MapPin size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Use My GPS Location</>
                 </button>
                 <div className="form-group">
                   <label className="form-label">Allowed Radius (meters)</label>
@@ -285,14 +290,14 @@ export default function FacultyPage() {
                     onChange={e => setSessionForm(f => ({ ...f, radius: e.target.value }))} />
                 </div>
                 <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-                  {loading ? <><span className="spinner-sm"></span> Creating...</> : '🚀 Start 30-Min Session'}
+                  {loading ? <><span className="spinner-sm"></span> Creating...</> : <><Play size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Start 30-Min Session</>}
                 </button>
               </form>
             </div>
 
             {/* Subjects */}
             <div className="card">
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 20 }}>📚 Your Subjects</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 20 }}><><BookOpen size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Your Subjects</></h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {subjects.map(s => (
                   <div key={s.id} className="card" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.03)' }}>
@@ -308,8 +313,8 @@ export default function FacultyPage() {
               </div>
               <div className="divider" />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-ghost btn-sm" onClick={handleExportCSV}>⬇️ Export CSV Report</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setStep('add_student')}>👤 Register New Student</button>
+                <button className="btn btn-ghost btn-sm" onClick={handleExportCSV}><><Download size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Export CSV Report</></button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setStep('add_student')}><><UserPlus size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Register New Student</></button>
               </div>
             </div>
           </div>
@@ -324,11 +329,11 @@ export default function FacultyPage() {
       <Navbar />
       <div className="container-sm" style={{ paddingTop: 80 }}>
         <button className="btn btn-ghost btn-sm mb-4" onClick={() => { setStep('dashboard'); stopCamera() }}>
-          ← Back to Dashboard
+          <><ArrowLeft size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Back to Dashboard</>
         </button>
         <div className="card animate-fade-in">
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 16 }}>Register New Student Face</h2>
-          {error && <div className="alert alert-danger mb-4">⚠️ {error}</div>}
+          {error && <div className="alert alert-danger mb-4"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
           
           <form onSubmit={handleAddStudentSubmit}>
             <div className="grid-2" style={{ gap: 12, marginBottom: 12 }}>
@@ -375,7 +380,7 @@ export default function FacultyPage() {
                       </div>
                     ) : (
                       <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
-                        <button type="button" className="btn btn-primary" onClick={capturePhoto}>📸 Capture Reference</button>
+                        <button type="button" className="btn btn-primary" onClick={capturePhoto}><><Camera size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Capture Reference</></button>
                       </div>
                     )}
                   </>
@@ -408,22 +413,22 @@ export default function FacultyPage() {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="section-badge mb-2">🔴 LIVE SESSION</div>
+              <div className="section-badge mb-2"><><CircleDot size={18} color="var(--danger)" style={{display:'inline', marginBottom:-4, marginRight:6}}/> LIVE SESSION</></div>
               <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>
                 {qrData?.subject_code} — {qrData?.subject_name}
               </h1>
-              <p className="text-muted text-sm">📍 {qrData?.classroom_name}</p>
+              <p className="text-muted text-sm"><><MapPin size={14} style={{display:'inline', marginBottom:-2, marginRight:4}}/> {qrData?.classroom_name}</></p>
             </div>
             <div className="flex gap-3">
-              <button className="btn btn-ghost btn-sm" onClick={() => window.location.href = `/api/session/${session.session_id}/export-csv`}>⬇️ CSV</button>
-              <button className="btn btn-danger btn-sm" onClick={handleEndSession}>🛑 End Session</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => window.location.href = `/api/session/${session.session_id}/export-csv`}><><Download size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> CSV</></button>
+              <button className="btn btn-danger btn-sm" onClick={handleEndSession}><><StopCircle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> End Session</></button>
             </div>
           </div>
 
           <div className="grid-2">
             {/* QR Panel */}
             <div className="card" style={{ textAlign: 'center' }}>
-              <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1rem' }}>📱 Live QR Code</h3>
+              <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1rem' }}><><Smartphone size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Live QR Code</></h3>
               {qrData?.status === 'active' ? (
                 <>
                   <div className="qr-container" style={{ marginBottom: 20 }}>
@@ -436,16 +441,16 @@ export default function FacultyPage() {
                   </div>
                   <div className="flex gap-2 justify-center mt-4">
                     <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(qrData.scan_url)}>
-                      📋 Copy Link
+                      <><Copy size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Copy Link</>
                     </button>
                     <a className="btn btn-ghost btn-sm" href={qrData.scan_url} target="_blank" rel="noreferrer">
-                      🔗 Open Student Portal
+                      <><ExternalLink size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Open Student Portal</>
                     </a>
                   </div>
                 </>
               ) : (
                 <div className="empty-state">
-                  <div className="empty-state-icon">⏱️</div>
+                  <div className="empty-state-icon"><Clock size={40} color="var(--muted)" /></div>
                   <p>Session {qrData?.status}</p>
                 </div>
               )}
@@ -454,12 +459,12 @@ export default function FacultyPage() {
             {/* Attendance Feed */}
             <div className="card">
               <div className="flex justify-between items-center mb-4">
-                <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>👥 Live Attendance Feed</h3>
+                <h3 style={{ fontWeight: 700, fontSize: '1rem' }}><><Users size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Live Attendance Feed</></h3>
                 <span className="badge badge-success">{attendees.length} Present</span>
               </div>
               {attendees.length === 0 ? (
                 <div className="empty-state" style={{ padding: '40px 20px' }}>
-                  <div className="empty-state-icon">🎓</div>
+                  <div className="empty-state-icon"><GraduationCap size={40} color="var(--muted)" /></div>
                   <p className="text-sm">Waiting for students to scan...</p>
                 </div>
               ) : (

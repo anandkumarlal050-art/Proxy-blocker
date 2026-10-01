@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { GraduationCap } from 'lucide-react'
 
 export default function Navbar() {
   const loc = useLocation()
@@ -7,7 +8,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">
-        <div className="brand-icon">🎓</div>
+        <div className="brand-icon"><GraduationCap size={24} color="#fff" /></div>
         Smart<span>Presence</span> AI
       </Link>
       <div className="navbar-links">
