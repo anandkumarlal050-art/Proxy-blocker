@@ -11,9 +11,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "/opt/venv/bin/python -m prisma py fetch",
-  "cd backend && /opt/venv/bin/python -m prisma generate --schema prisma/schema.prisma",
-  "cd backend && /opt/venv/bin/python -m prisma db push --schema prisma/schema.prisma --skip-generate"
+  "bash -c 'export PATH=/opt/venv/bin:$PATH && python -m prisma py fetch && cd backend && python -m prisma generate --schema prisma/schema.prisma && python -m prisma db push --schema prisma/schema.prisma --skip-generate'"
 ]
 
 [start]
