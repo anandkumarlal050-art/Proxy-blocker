@@ -4,7 +4,7 @@ import api from '../api'
 import { 
   GraduationCap, AlertTriangle, Key, Radio, MapPin, Play, BookOpen, Download,
   UserPlus, ArrowLeft, Camera, CircleDot, StopCircle, Smartphone, Copy, ExternalLink,
-  Clock, Users
+  Clock, Users, CheckCircle2, XCircle, LogOut, ShieldCheck
 } from 'lucide-react'
 
 // ── Circular countdown SVG ──
@@ -57,6 +57,8 @@ export default function FacultyPage() {
   const [studentForm, setStudentForm] = useState({ roll_no: '', name: '', email: '', password: '', department: '', semester: '' })
   const [capturedStudentImage, setCapturedStudentImage] = useState(null)
   const [isStreaming, setIsStreaming] = useState(false)
+  const [photoValidation, setPhotoValidation] = useState(null) // null | 'validating' | 'ok' | 'fail'
+  const [photoValidMsg, setPhotoValidMsg] = useState('')
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -163,28 +165,44 @@ export default function FacultyPage() {
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null }
     setIsStreaming(false)
   }
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     canvas.width = videoRef.current.videoWidth
     canvas.height = videoRef.current.videoHeight
     ctx.drawImage(videoRef.current, 0, 0)
-    setCapturedStudentImage(canvas.toDataURL('image/jpeg', 0.85))
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    setCapturedStudentImage(dataUrl)
     stopCamera()
+    // Validate the captured photo immediately
+    setPhotoValidation('validating')
+    setPhotoValidMsg('')
+    try {
+      await api.post('/validate-photo', { photo_b64: dataUrl })
+      setPhotoValidation('ok')
+      setPhotoValidMsg('Face detected and validated successfully!')
+    } catch (err) {
+      setPhotoValidation('fail')
+      setPhotoValidMsg(err.response?.data?.detail || 'No face detected. Please retake.')
+    }
   }
-  const retakePhoto = () => { setCapturedStudentImage(null); startCamera() }
+  const retakePhoto = () => { setCapturedStudentImage(null); setPhotoValidation(null); setPhotoValidMsg(''); startCamera() }
 
   const handleAddStudentSubmit = async (e) => {
     e.preventDefault()
     if (!capturedStudentImage) return setError('Please capture a photo first.')
+    if (photoValidation === 'fail') return setError('Photo validation failed. Please retake with a clear face visible.')
+    if (photoValidation === 'validating') return setError('Photo is still being validated, please wait.')
     setLoading(true); setError('')
     try {
       await api.post('/faculty/create-student', { ...studentForm, photo_b64: capturedStudentImage })
       setStep('dashboard')
       setStudentForm({ roll_no: '', name: '', email: '', password: '', department: '', semester: '' })
       setCapturedStudentImage(null)
-      alert('Student created successfully!')
+      setPhotoValidation(null)
+      setPhotoValidMsg('')
+      alert('Student registered successfully! They can now log in and mark attendance.')
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create student.')
     }
@@ -328,13 +346,22 @@ export default function FacultyPage() {
     <div className="page">
       <Navbar />
       <div className="container-sm" style={{ paddingTop: 80 }}>
-        <button className="btn btn-ghost btn-sm mb-4" onClick={() => { setStep('dashboard'); stopCamera() }}>
-          <><ArrowLeft size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Back to Dashboard</>
-        </button>
+        <div className="flex justify-between items-center mb-4">
+          <button className="btn btn-ghost btn-sm" onClick={() => { setStep('dashboard'); stopCamera(); setPhotoValidation(null); setPhotoValidMsg('') }}>
+            <><ArrowLeft size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Back to Dashboard</>
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            setUser(null); setStep('login');
+            localStorage.removeItem('token'); localStorage.removeItem('faculty_user');
+            localStorage.removeItem('faculty_session'); localStorage.setItem('faculty_step', 'login');
+            stopCamera();
+          }}><><LogOut size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Logout</></button>
+        </div>
         <div className="card animate-fade-in">
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 16 }}>Register New Student Face</h2>
+          <p className="text-muted text-sm mb-6">Capture a clear, well-lit frontal photo. The system will verify face detection before saving.</p>
           {error && <div className="alert alert-danger mb-4"><><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> {error}</></div>}
-          
+
           <form onSubmit={handleAddStudentSubmit}>
             <div className="grid-2" style={{ gap: 12, marginBottom: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -368,35 +395,65 @@ export default function FacultyPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Reference Photo</label>
+              <label className="form-label">Reference Face Photo</label>
               <div style={{ background: '#000', borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3', position: 'relative' }}>
                 {!capturedStudentImage ? (
                   <>
                     <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} playsInline muted />
                     <canvas ref={canvasRef} style={{ display: 'none' }} />
                     {!isStreaming ? (
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <button type="button" className="btn btn-primary" onClick={startCamera}>Start Camera</button>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: 8 }}>Position your face in good lighting</div>
+                        <button type="button" className="btn btn-primary" onClick={startCamera}><><Camera size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Start Camera</></button>
                       </div>
                     ) : (
-                      <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
-                        <button type="button" className="btn btn-primary" onClick={capturePhoto}><><Camera size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Capture Reference</></button>
-                      </div>
+                      <>
+                        <div className="face-oval" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                          <svg viewBox="0 0 200 280" fill="none" style={{ width: '55%', height: '80%' }}>
+                            <ellipse cx="100" cy="140" rx="72" ry="100" stroke="rgba(99,102,241,0.8)" strokeWidth="2" strokeDasharray="6 4" />
+                          </svg>
+                        </div>
+                        <div className="scan-line" />
+                        <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+                          <button type="button" className="btn btn-primary" onClick={capturePhoto}><><Camera size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Capture Reference Photo</></button>
+                        </div>
+                      </>
                     )}
                   </>
                 ) : (
                   <>
                     <img src={capturedStudentImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Captured" />
                     <div style={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
-                      <button type="button" className="btn btn-ghost" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={retakePhoto}>Retake Photo</button>
+                      <button type="button" className="btn btn-ghost" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={retakePhoto}>Retake Photo</button>
                     </div>
                   </>
                 )}
               </div>
+
+              {/* Photo validation feedback */}
+              {photoValidation === 'validating' && (
+                <div className="alert alert-warning mt-2" style={{ marginBottom: 0 }}>
+                  <><span className="spinner-sm" style={{ marginRight: 8 }} /> Detecting face in photo...</>
+                </div>
+              )}
+              {photoValidation === 'ok' && (
+                <div className="alert alert-success mt-2" style={{ marginBottom: 0 }}>
+                  <><CheckCircle2 size={16} color="var(--success)" style={{display:'inline', marginBottom:-3, marginRight:6}}/> {photoValidMsg}</>
+                </div>
+              )}
+              {photoValidation === 'fail' && (
+                <div className="alert alert-danger mt-2" style={{ marginBottom: 0 }}>
+                  <><XCircle size={16} color="var(--danger)" style={{display:'inline', marginBottom:-3, marginRight:6}}/> {photoValidMsg}</>
+                </div>
+              )}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full mt-4" disabled={loading || !capturedStudentImage}>
-              {loading ? 'Registering...' : 'Submit & Register Student'}
+            <button
+              type="submit"
+              className="btn btn-primary btn-full mt-4"
+              disabled={loading || !capturedStudentImage || photoValidation === 'fail' || photoValidation === 'validating'}
+            >
+              {loading ? <><span className="spinner-sm" /> Registering...</> : <><ShieldCheck size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Register Student & Save Face</>}
             </button>
           </form>
         </div>
@@ -473,7 +530,7 @@ export default function FacultyPage() {
                     <div key={a.id} className="card animate-fade-in"
                       style={{ padding: '14px 16px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
                       <div className="flex items-center gap-3">
-                        <img src={a.photo_url} alt={a.student_name}
+                        <img src={a.photo_url?.startsWith('/') ? `${import.meta.env.PROD ? 'https://proxy-blocker-production.up.railway.app' : ''}${a.photo_url}` : a.photo_url} alt={a.student_name}
                           style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--success)' }} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{a.student_name}</div>

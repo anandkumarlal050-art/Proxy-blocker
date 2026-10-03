@@ -293,13 +293,29 @@ async def export_attendance_csv(faculty_id: str, subject_id: Optional[str] = Non
     return Response(content=output.getvalue(), media_type="text/csv",
                     headers={"Content-Disposition": f"attachment; filename={filename}"})
 
+class ValidatePhotoRequest(BaseModel):
+    photo_b64: str
+
+@app.post("/api/validate-photo")
+async def validate_photo_endpoint(req: ValidatePhotoRequest):
+    """Pre-validate a photo for face registration before full student creation."""
+    is_valid, message = face_ai.validate_photo_for_registration(req.photo_b64)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=message)
+    return {"status": "ok", "message": message}
+
 @app.post("/api/faculty/create-student")
 async def create_student(req: CreateStudentRequest):
     # Check if student exists
     existing = await database.db.student.find_first(where={"OR": [{"roll_no": req.roll_no}, {"email": req.email}]})
     if existing:
         raise HTTPException(status_code=400, detail="Student with this roll number or email already exists.")
-    
+
+    # Validate reference photo contains a detectable face
+    photo_valid, photo_msg = face_ai.validate_photo_for_registration(req.photo_b64)
+    if not photo_valid:
+        raise HTTPException(status_code=400, detail=f"Photo rejected: {photo_msg}")
+
     # Save the reference photo
     try:
         import uuid
@@ -308,13 +324,13 @@ async def create_student(req: CreateStudentRequest):
         photo_dir = os.path.join(STATIC_DIR, "images", "students")
         os.makedirs(photo_dir, exist_ok=True)
         photo_path = os.path.join(photo_dir, filename)
-        
+
         pil_img = face_ai.base64_to_pil(req.photo_b64)
         pil_img.save(photo_path, "JPEG")
         photo_url = f"/static/images/students/{filename}"
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
-        
+
     # Create in DB
     try:
         await database.db.student.create(
@@ -331,7 +347,7 @@ async def create_student(req: CreateStudentRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-        
+
     return {"status": "success", "message": f"Student {req.name} created successfully.", "photo_url": photo_url}
 
 @app.post("/api/student/verify-attendance")
@@ -371,9 +387,9 @@ async def verify_attendance(req: VerifyAttendanceRequest):
 
     # 5. AI Face Recognition
     is_face_matched, confidence, details = face_ai.verify_faces(req.live_image, student.photo_url)
-    if not is_face_matched or confidence < 70.0:
+    if not is_face_matched or confidence < 65.0:
         raise HTTPException(status_code=400,
-            detail=f"AI Face Recognition Failed! Confidence: {confidence}% (minimum 70%). Details: {details}")
+            detail=f"Face Verification Failed! Confidence: {confidence}% (minimum 65% required). Tip: Ensure good lighting, face the camera directly, and remove glasses/mask if wearing any. [{details}]")
 
     # Save snapshot
     snapshot_url = ""

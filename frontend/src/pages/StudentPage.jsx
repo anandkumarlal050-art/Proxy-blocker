@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar'
 import api from '../api'
 import { 
   Smartphone, Key, AlertTriangle, MapPin, Radio, School, Home, Camera, 
-  RefreshCw, Upload, CheckCircle2, XCircle
+  RefreshCw, Upload, CheckCircle2, XCircle, LogOut
 } from 'lucide-react'
 
 const STEPS = ['Login', 'GPS Verify', 'Face Capture', 'Result']
@@ -117,6 +117,13 @@ export default function StudentPage() {
     startCamera()
   }
 
+  const handleLogout = () => {
+    setUser(null); setStep(0);
+    localStorage.removeItem('token');
+    localStorage.removeItem('student_user');
+    stopCamera();
+  }
+
   const submitAttendance = async () => {
     if (!capturedImage || !gpsCoords.lat) return
     setLoading(true); setError('')
@@ -193,24 +200,35 @@ export default function StudentPage() {
       <Navbar />
       <div className="container-sm" style={{ paddingTop: 40 }}>
         <div className="animate-fade-in">
-          {/* Stepper */}
-          <div className="stepper mb-8">
-            {STEPS.map((label, i) => (
-              <div key={label} className={`step ${i < step ? 'done' : i === step ? 'active' : ''}`}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div className="step-circle">{i < step ? '✓' : i + 1}</div>
-                  <div className="step-label">{label}</div>
+          {/* Top bar: Stepper + Logout */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+            <div className="stepper" style={{ flex: 1, marginBottom: 0 }}>
+              {STEPS.map((label, i) => (
+                <div key={label} className={`step ${i < step ? 'done' : i === step ? 'active' : ''}`}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className="step-circle">{i < step ? '✓' : i + 1}</div>
+                    <div className="step-label">{label}</div>
+                  </div>
+                  {i < STEPS.length - 1 && <div className="step-line" />}
                 </div>
-                {i < STEPS.length - 1 && <div className="step-line" />}
-              </div>
-            ))}
+              ))}
+            </div>
+            {user && (
+              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 16, flexShrink: 0 }} onClick={handleLogout}>
+                <><LogOut size={14} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Logout</>
+              </button>
+            )}
           </div>
 
           {/* Student info */}
           {user && (
             <div className="card flex items-center gap-4 mb-6" style={{ padding: '16px 20px' }}>
-              <img src={user.photo_url} alt={user.name}
-                style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }} />
+              <img
+                src={user.photo_url?.startsWith('/') ? `${import.meta.env.PROD ? 'https://proxy-blocker-production.up.railway.app' : ''}${user.photo_url}` : user.photo_url}
+                alt={user.name}
+                style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }}
+                onError={e => { e.target.style.display = 'none' }}
+              />
               <div>
                 <div style={{ fontWeight: 700 }}>{user.name}</div>
                 <div className="text-xs text-muted">{user.roll_no} · {user.semester}</div>
