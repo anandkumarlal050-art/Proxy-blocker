@@ -146,6 +146,12 @@ async def get_student_by_id(student_id: str):
     )
     return row
 
+async def update_student_photo(student_id: str, photo_url: str):
+    return await db.student.update(
+        where={"id": student_id},
+        data={"photo_url": photo_url}
+    )
+
 async def get_all_students():
     rows = await db.student.find_many(order={"roll_no": "asc"})
     return [{"id": r.id, "roll_no": r.roll_no, "name": r.name, "email": r.email,

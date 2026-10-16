@@ -421,12 +421,15 @@ export default function StudentPage() {
           {user && (
             <div className="card flex items-center justify-between mb-6" style={{ padding: '16px 20px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.25)' }}>
               <div className="flex items-center gap-4">
-                <img
-                  src={user.photo_url?.startsWith('/') ? `${import.meta.env.PROD ? 'https://proxy-blocker-production.up.railway.app' : ''}${user.photo_url}` : user.photo_url}
-                  alt={user.name}
-                  style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }}
-                  onError={e => { e.target.style.display = 'none' }}
-                />
+                <div style={{ position: 'relative', width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem', color: '#fff', border: '2px solid var(--accent)', flexShrink: 0, overflow: 'hidden' }}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'S'}
+                  <img
+                    src={user.photo_url?.startsWith('/') ? `${import.meta.env.PROD ? 'https://proxy-blocker-production.up.railway.app' : ''}${user.photo_url}` : user.photo_url}
+                    alt={user.name}
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    onError={e => { e.target.style.display = 'none' }}
+                  />
+                </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{user.name}</div>
                   <div className="text-xs text-muted" style={{ marginTop: 2 }}>
