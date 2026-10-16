@@ -37,7 +37,9 @@ for p in _CASCADE_PATHS:
 
 
 def base64_to_pil(base64_str: str) -> Image.Image:
-    """Converts a base64 image data string (with or without data:image/... prefix) to PIL Image."""
+    """Converts a base64 image data string (with or without data:image/... prefix) or file path to PIL Image."""
+    if isinstance(base64_str, str) and os.path.exists(base64_str):
+        return Image.open(base64_str).convert("RGB")
     if "," in base64_str:
         base64_str = base64_str.split(",", 1)[1]
     image_bytes = base64.b64decode(base64_str)
