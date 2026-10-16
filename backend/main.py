@@ -77,6 +77,12 @@ class CreateSessionRequest(BaseModel):
     lng: float
     allowed_radius_meters: float = 100.0
     duration_minutes: int = 30
+    faculty_name: Optional[str] = None
+
+class UpdateFacultyProfileRequest(BaseModel):
+    name: str
+
+SESSION_FACULTY_OVERRIDES = {}
 
 class VerifyAttendanceRequest(BaseModel):
     session_id: str
@@ -162,9 +168,37 @@ async def get_students():
 async def get_faculty_subjects(faculty_id: str):
     return await database.get_faculty_subjects(faculty_id)
 
+@app.post("/api/faculty/{faculty_id}/update-profile")
+async def update_faculty_profile(faculty_id: str, req: UpdateFacultyProfileRequest):
+    new_name = req.name.strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Faculty name cannot be empty.")
+    try:
+        updated = await database.update_faculty_name(faculty_id, new_name)
+        return {
+            "status": "success",
+            "message": "Faculty name updated successfully",
+            "user": {
+                "id": updated.id,
+                "name": updated.name,
+                "email": updated.email,
+                "department": updated.department,
+                "designation": updated.designation
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update faculty profile: {str(e)}")
+
 @app.post("/api/session/create")
 async def create_session_endpoint(req: CreateSessionRequest):
     session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
+    if req.faculty_name and req.faculty_name.strip():
+        SESSION_FACULTY_OVERRIDES[session_id] = req.faculty_name.strip()
+        try:
+            await database.update_faculty_name(req.faculty_id, req.faculty_name.strip())
+        except Exception:
+            pass
+
     await database.create_session(
         session_id=session_id,
         subject_id=req.subject_id,
@@ -212,11 +246,13 @@ async def get_session_qr(session_id: str, request: Request):
     records = await database.get_session_attendance_records(session_id)
     seconds_in_token = 5 - (int(now) % 5)
 
+    faculty_name = SESSION_FACULTY_OVERRIDES.get(session_id) or session.get("faculty_name", "")
     return {
         "status": "active",
         "session_id": session_id,
         "subject_name": session["subject_name"],
         "subject_code": session["subject_code"],
+        "faculty_name": faculty_name,
         "classroom_name": session["classroom_name"],
         "token": token,
         "token_expires_in": seconds_in_token,
@@ -409,11 +445,13 @@ async def verify_attendance(req: VerifyAttendanceRequest):
         distance=distance, face_confidence=confidence, snapshot_path=snapshot_url
     )
 
+    faculty_name = SESSION_FACULTY_OVERRIDES.get(req.session_id) or session.get("faculty_name", "")
     return {
         "status": "success",
         "message": f"Attendance verified & recorded for {student.name}!",
         "student_name": student.name, "roll_no": student.roll_no,
         "subject_name": session["subject_name"], "subject_code": session["subject_code"],
+        "faculty_name": faculty_name,
         "marked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "gps_distance": distance, "face_confidence": confidence,
         "classroom_name": session["classroom_name"]

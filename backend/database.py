@@ -94,10 +94,25 @@ async def get_faculty_by_id(faculty_id: str):
 
 async def get_faculty_subjects(faculty_id: str):
     rows = await db.subject.find_many(
-        where={"faculty_id": faculty_id},
+        include={"faculty": True},
         order={"code": "asc"}
     )
-    return [{"id": r.id, "code": r.code, "name": r.name, "faculty_id": r.faculty_id, "total_classes": r.total_classes} for r in rows]
+    return [{
+        "id": r.id,
+        "code": r.code,
+        "name": r.name,
+        "faculty_id": r.faculty_id,
+        "faculty_name": r.faculty.name if r.faculty else "",
+        "total_classes": r.total_classes,
+        "is_mine": r.faculty_id == faculty_id
+    } for r in rows]
+
+async def update_faculty_name(faculty_id: str, new_name: str):
+    updated = await db.faculty.update(
+        where={"id": faculty_id},
+        data={"name": new_name}
+    )
+    return updated
 
 # ─────────────────────────────────────────────
 # STUDENT QUERIES

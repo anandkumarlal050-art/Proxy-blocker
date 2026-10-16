@@ -42,7 +42,15 @@ export default function FacultyPage() {
   })
   const [subjects, setSubjects] = useState([])
   const [form, setForm] = useState({ username: '', password: '' })
-  const [sessionForm, setSessionForm] = useState({ subject_id: '', classroom_name: '', lat: '', lng: '', radius: 100 })
+  const [sessionForm, setSessionForm] = useState({
+    subject_id: '',
+    classroom_name: '',
+    lat: '',
+    lng: '',
+    radius: 100,
+    faculty_name: user?.name || ''
+  })
+  const [updatingProfile, setUpdatingProfile] = useState(false)
   const [session, setSession] = useState(() => {
     const saved = localStorage.getItem('faculty_session')
     return saved ? JSON.parse(saved) : null
@@ -78,10 +86,15 @@ export default function FacultyPage() {
   }, [])
 
   useEffect(() => {
-    if (user && subjects.length === 0 && step === 'dashboard') {
-      api.get(`/faculty/${user.id}/subjects`).then(res => setSubjects(res.data)).catch(() => {})
+    if (user && step === 'dashboard') {
+      if (subjects.length === 0) {
+        api.get(`/faculty/${user.id}/subjects`).then(res => setSubjects(res.data)).catch(() => {})
+      }
+      if (!sessionForm.faculty_name && user.name) {
+        setSessionForm(f => ({ ...f, faculty_name: user.name }))
+      }
     }
-  }, [user, step, subjects.length])
+  }, [user, step, subjects.length, sessionForm.faculty_name])
 
   useEffect(() => {
     if (session && step === 'session') {
@@ -91,6 +104,30 @@ export default function FacultyPage() {
     }
   }, [session, step, fetchQR])
 
+  const handleSubjectChange = (subjectId) => {
+    const selected = subjects.find(s => s.id === subjectId)
+    setSessionForm(f => ({
+      ...f,
+      subject_id: subjectId,
+      // Change faculty name when class changes: use the subject's faculty name or current user name
+      faculty_name: selected?.faculty_name || user?.name || f.faculty_name
+    }))
+  }
+
+  const handleUpdateProfileName = async () => {
+    if (!sessionForm.faculty_name?.trim()) return
+    setUpdatingProfile(true)
+    try {
+      const res = await api.post(`/faculty/${user.id}/update-profile`, { name: sessionForm.faculty_name.trim() })
+      setUser(prev => ({ ...prev, name: res.data.user.name }))
+      localStorage.setItem('faculty_user', JSON.stringify({ ...user, name: res.data.user.name }))
+      alert(`Faculty name updated to: ${res.data.user.name}`)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update faculty name')
+    }
+    setUpdatingProfile(false)
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true); setError('')
@@ -99,6 +136,7 @@ export default function FacultyPage() {
       setUser(res.data.user)
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('faculty_user', JSON.stringify(res.data.user))
+      setSessionForm(f => ({ ...f, faculty_name: res.data.user.name }))
       const subs = await api.get(`/faculty/${res.data.user.id}/subjects`)
       setSubjects(subs.data)
       setStep('dashboard')
@@ -118,13 +156,19 @@ export default function FacultyPage() {
         faculty_id: user.id,
         subject_id: sessionForm.subject_id,
         classroom_name: sessionForm.classroom_name,
+        faculty_name: sessionForm.faculty_name || user.name,
         lat: parseFloat(sessionForm.lat),
         lng: parseFloat(sessionForm.lng),
         allowed_radius_meters: parseFloat(sessionForm.radius),
         duration_minutes: 30
       })
-      setSession(res.data)
-      localStorage.setItem('faculty_session', JSON.stringify(res.data))
+      const fullSession = {
+        ...res.data,
+        faculty_name: sessionForm.faculty_name || user.name,
+        classroom_name: sessionForm.classroom_name
+      }
+      setSession(fullSession)
+      localStorage.setItem('faculty_session', JSON.stringify(fullSession))
       setStep('session')
       localStorage.setItem('faculty_step', 'session')
     } catch (e) { setError(e.response?.data?.detail || 'Failed to create session') }
@@ -275,13 +319,50 @@ export default function FacultyPage() {
               <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 20 }}><><Radio size={18} style={{display:'inline', marginBottom:-4, marginRight:6}}/> Start Attendance Session</></h2>
               <form onSubmit={handleStartSession}>
                 <div className="form-group">
-                  <label className="form-label">Subject</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="form-label" style={{ marginBottom: 0 }}>Class / Subject</label>
+                    <span className="text-xs text-muted">Change class to auto-load teacher</span>
+                  </div>
                   <select className="form-select" value={sessionForm.subject_id}
-                    onChange={e => setSessionForm(f => ({ ...f, subject_id: e.target.value }))}>
-                    <option value="">Select subject...</option>
-                    {subjects.map(s => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
+                    onChange={e => handleSubjectChange(e.target.value)}>
+                    <option value="">Select class / subject...</option>
+                    {subjects.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.code} — {s.name} {s.faculty_name ? `(${s.faculty_name})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                <div className="form-group">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="form-label" style={{ marginBottom: 0 }}>Faculty / Instructor Name</label>
+                    <span className="badge badge-accent text-xs">Changeable</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      placeholder="e.g. Dr. Alan Turing"
+                      value={sessionForm.faculty_name}
+                      onChange={e => setSessionForm(f => ({ ...f, faculty_name: e.target.value }))}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      title="Save this name to your profile"
+                      onClick={handleUpdateProfileName}
+                      disabled={!sessionForm.faculty_name?.trim() || updatingProfile}
+                    >
+                      {updatingProfile ? 'Saving...' : 'Save Name'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-muted mt-1">
+                    Auto-updates when you switch classes, and can be edited for substitute or co-instructor.
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Classroom Name</label>
                   <input className="form-input" placeholder="e.g. CS Block Room 301" value={sessionForm.classroom_name}
@@ -474,7 +555,9 @@ export default function FacultyPage() {
               <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>
                 {qrData?.subject_code} — {qrData?.subject_name}
               </h1>
-              <p className="text-muted text-sm"><><MapPin size={14} style={{display:'inline', marginBottom:-2, marginRight:4}}/> {qrData?.classroom_name}</></p>
+              <p className="text-muted text-sm" style={{ marginTop: 4 }}>
+                <><MapPin size={14} style={{display:'inline', marginBottom:-2, marginRight:4}}/> {qrData?.classroom_name} &nbsp;·&nbsp; <GraduationCap size={14} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Faculty: <strong style={{color:'var(--accent-light)'}}>{qrData?.faculty_name || sessionForm.faculty_name || user?.name}</strong></>
+              </p>
             </div>
             <div className="flex gap-3">
               <button className="btn btn-ghost btn-sm" onClick={() => window.location.href = `/api/session/${session.session_id}/export-csv`}><><Download size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> CSV</></button>
