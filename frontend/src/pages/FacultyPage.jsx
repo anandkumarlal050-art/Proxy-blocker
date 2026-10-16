@@ -47,7 +47,7 @@ export default function FacultyPage() {
     classroom_name: '',
     lat: '',
     lng: '',
-    radius: 100,
+    radius: 200,
     faculty_name: user?.name || ''
   })
   const [updatingProfile, setUpdatingProfile] = useState(false)
@@ -384,9 +384,26 @@ export default function FacultyPage() {
                   <><MapPin size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Use My GPS Location</>
                 </button>
                 <div className="form-group">
-                  <label className="form-label">Allowed Radius (meters)</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="form-label" style={{ marginBottom: 0 }}>Allowed Radius (meters)</label>
+                    <span className="text-xs text-muted">Indoor phone GPS buffer included</span>
+                  </div>
                   <input className="form-input" type="number" value={sessionForm.radius}
-                    onChange={e => setSessionForm(f => ({ ...f, radius: e.target.value }))} />
+                    onChange={e => setSessionForm(f => ({ ...f, radius: parseFloat(e.target.value) || 200 }))} />
+                  <div className="flex gap-2 mt-2">
+                    {[
+                      { label: '100m (Strict)', val: 100 },
+                      { label: '200m (Room)', val: 200 },
+                      { label: '500m (Building)', val: 500 },
+                      { label: '1000m (Campus)', val: 1000 }
+                    ].map(p => (
+                      <button key={p.val} type="button" className={`btn btn-sm ${sessionForm.radius === p.val ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ flex: 1, padding: '4px 6px', fontSize: '0.78rem' }}
+                        onClick={() => setSessionForm(f => ({ ...f, radius: p.val }))}>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
                   {loading ? <><span className="spinner-sm"></span> Creating...</> : <><Play size={16} style={{display:'inline', marginBottom:-3, marginRight:4}}/> Start 30-Min Session</>}

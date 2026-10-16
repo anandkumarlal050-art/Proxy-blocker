@@ -231,19 +231,16 @@ def verify_faces(live_image_b64: str, reference_image_path: str):
         ref_eq = cv2.equalizeHist(ref_face)
 
         # 1. Normalized Cross-Correlation (NCC)
-        ncc_res = cv2.matchTemplate(live_eq, ref_eq, cv2.TM_CCOEFF_NORMED)
-        ncc_score = (float(ncc_res[0][0]) + 1.0) / 2.0 * 100.0
+        ncc_val = float(cv2.matchTemplate(live_eq, ref_eq, cv2.TM_CCOEFF_NORMED)[0][0])
+        # Direct NCC scaled 0-100 (non-negative)
+        ncc_score = max(0.0, ncc_val) * 100.0
 
-        # 2. Histogram Correlation
-        h1 = cv2.calcHist([live_eq], [0], None, [64], [0, 256])
-        h2 = cv2.calcHist([ref_eq], [0], None, [64], [0, 256])
-        cv2.normalize(h1, h1, 0, 1, cv2.NORM_MINMAX)
-        cv2.normalize(h2, h2, 0, 1, cv2.NORM_MINMAX)
-        hist_corr = float(cv2.compareHist(h1, h2, cv2.HISTCMP_CORREL))
-        hist_score = (hist_corr + 1.0) / 2.0 * 100.0
+        # 2. Pixel Mean Absolute Error (MAE) - highly sensitive to facial structural difference
+        mae = float(np.mean(np.abs(live_eq.astype(float) - ref_eq.astype(float))))
+        mae_score = max(0.0, min(100.0, 100.0 - (mae * 1.1)))
 
         # 3. ORB Keypoint Biometric Descriptors
-        orb_score = 40.0
+        orb_score = 15.0
         try:
             orb = cv2.ORB_create(300)
             kp1, des1 = orb.detectAndCompute(live_eq, None)
@@ -252,21 +249,25 @@ def verify_faces(live_image_b64: str, reference_image_path: str):
                 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
                 matches = bf.match(des1, des2)
                 if len(matches) > 0:
-                    top_matches = sorted(matches, key=lambda m: m.distance)[:40]
+                    top_matches = sorted(matches, key=lambda m: m.distance)[:35]
                     avg_dist = float(np.mean([m.distance for m in top_matches]))
-                    # Low distance (<30) indicates same facial features; high (>55) indicates different person
-                    orb_score = max(0.0, min(100.0, 100.0 - (avg_dist * 1.45)))
+                    close_matches = len([m for m in top_matches if m.distance < 38])
+                    if close_matches >= 3:
+                        orb_score = max(0.0, min(100.0, 100.0 - (avg_dist * 1.4)))
+                    else:
+                        orb_score = max(0.0, min(30.0, 50.0 - (avg_dist * 0.7)))
                 else:
-                    orb_score = 25.0
+                    orb_score = 10.0
         except Exception:
             pass
 
-        # 4. Composite Confidence Score
-        composite = (ncc_score * 0.35) + (hist_score * 0.25) + (orb_score * 0.40)
+        # 4. Strict Composite Confidence Score
+        # Weighting: ORB Descriptors (40%), Template NCC (35%), Structural MAE (25%)
+        composite = (orb_score * 0.40) + (ncc_score * 0.35) + (mae_score * 0.25)
         final_score = round(min(99.8, max(0.0, composite)), 1)
         is_match = final_score >= 65.0
 
-        details = f"True Biometric AI (ORB:{round(orb_score, 1)}%, NCC:{round(ncc_score, 1)}%, Hist:{round(hist_score, 1)}%)"
+        details = f"Biometric Match: ORB={round(orb_score, 1)}%, NCC={round(ncc_score, 1)}%, MAE={round(mae_score, 1)}%"
         return is_match, final_score, details
 
     except Exception as e:

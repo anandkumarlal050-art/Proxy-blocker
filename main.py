@@ -445,11 +445,12 @@ async def verify_attendance(req: VerifyAttendanceRequest):
 
     # 4. GPS Geofence
     distance = calculate_distance_meters(req.lat, req.lng, session["lat"], session["lng"])
-    if distance > session["allowed_radius_meters"]:
+    allowed_with_drift = session["allowed_radius_meters"] + 35.0  # +35m indoor smartphone GPS drift tolerance
+    if distance > allowed_with_drift:
         raise HTTPException(status_code=400,
             detail=f"Location Verification Failed! You are {distance}m away from {session['classroom_name']}. Maximum allowed: {session['allowed_radius_meters']}m.")
 
-    # 5. AI Face Recognition (with automatic self-healing if reference photo was missing)
+    # 5. Strict AI Biometric Face Recognition
     ref_photo_loadable = False
     try:
         if student.photo_url:
@@ -459,31 +460,15 @@ async def verify_attendance(req: VerifyAttendanceRequest):
         ref_photo_loadable = False
 
     if not ref_photo_loadable:
-        # Self-healing: Reference photo file was lost (e.g. server redeploy).
-        # Validate that the live selfie has a genuine human face and re-enroll it permanently into the DB!
-        is_valid_face, face_msg = face_ai.validate_photo_for_registration(req.live_image)
-        if not is_valid_face:
-            raise HTTPException(status_code=400,
-                detail=f"Stored reference photo was missing on server, and live camera did not detect a clear human face: {face_msg}. Please face the camera directly in good lighting.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"No registered reference face photo found on file for Roll No {student.roll_no}. Please ask your faculty to register your official face photo in the Faculty Portal before marking attendance."
+        )
 
-        photo_data_url = req.live_image if req.live_image.startswith("data:") else f"data:image/jpeg;base64,{req.live_image}"
-        try:
-            await database.update_student_photo(student.id, photo_data_url)
-            filename = f"{student.roll_no.lower()}.jpg"
-            photo_dir = os.path.join(STATIC_DIR, "images", "students")
-            os.makedirs(photo_dir, exist_ok=True)
-            pil_live = face_ai.base64_to_pil(req.live_image)
-            pil_live.save(os.path.join(photo_dir, filename), "JPEG")
-        except Exception:
-            pass
-
-        confidence = 99.0
-        details = "Biometric reference photo re-enrolled & saved permanently to database"
-    else:
-        is_face_matched, confidence, details = face_ai.verify_faces(req.live_image, student.photo_url)
-        if not is_face_matched or confidence < 65.0:
-            raise HTTPException(status_code=400,
-                detail=f"Face Verification Failed! Confidence: {confidence}% (minimum 65% required). Tip: Ensure good lighting, face the camera directly, and remove glasses/mask if wearing any. [{details}]")
+    is_face_matched, confidence, details = face_ai.verify_faces(req.live_image, student.photo_url)
+    if not is_face_matched or confidence < 65.0:
+        raise HTTPException(status_code=400,
+            detail=f"Face Verification Failed! Confidence: {confidence}% (minimum 65% required). Biometric mismatch with registered profile of {student.name} ({student.roll_no}). [{details}]")
 
     # Save snapshot
     snapshot_url = ""

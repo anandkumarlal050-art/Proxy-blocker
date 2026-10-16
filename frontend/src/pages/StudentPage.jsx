@@ -10,6 +10,18 @@ import {
 
 const STEPS = ['Login', 'Class & GPS', 'AI Face Match', 'Status']
 
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null
+  const R = 6371000 // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return Math.round(R * c)
+}
+
 export default function StudentPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [user, setUser] = useState(() => {
@@ -36,12 +48,19 @@ export default function StudentPage() {
 
   // Real-time face detection HUD states
   const [faceDetected, setFaceDetected] = useState(false)
-  const [faceConfidence, setFaceConfidence] = useState(0)
 
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const faceDetectorInterval = useRef(null)
+
+  // Distance computation with indoor buffer
+  const currentDistance = (gpsCoords.lat != null && sessionInfo?.lat != null)
+    ? getDistanceMeters(gpsCoords.lat, gpsCoords.lng, sessionInfo.lat, sessionInfo.lng)
+    : null
+  const allowedRadius = sessionInfo?.allowed_radius_meters || 200
+  const allowedWithBuffer = allowedRadius + 35 // smartphone indoor GPS drift buffer
+  const isGpsWithinRange = currentDistance !== null ? currentDistance <= allowedWithBuffer : true
 
   const sessionId = searchParams.get('session_id') || ''
   const token = searchParams.get('token') || ''
@@ -93,7 +112,6 @@ export default function StudentPage() {
             const faces = await detector.detect(videoRef.current)
             if (faces && faces.length > 0) {
               setFaceDetected(true)
-              setFaceConfidence(Math.round(88 + Math.random() * 10))
               return
             }
           } catch { /* fallback to canvas below */ }
@@ -124,10 +142,8 @@ export default function StudentPage() {
           const skinRatio = skinPixelCount / maxOne(totalPixels)
           if (skinRatio >= 0.25) {
             setFaceDetected(true)
-            setFaceConfidence(Math.round(82 + skinRatio * 16))
           } else {
             setFaceDetected(false)
-            setFaceConfidence(0)
           }
         } catch {
           setFaceDetected(true) // graceful fallback
@@ -211,10 +227,14 @@ export default function StudentPage() {
   }
 
   const simulateGPS = (inside) => {
+    const baseLat = sessionInfo?.lat ?? 28.545100
+    const baseLng = sessionInfo?.lng ?? 77.192650
     if (inside) {
-      setGpsCoords({ lat: 28.545100, lng: 77.192650 })
+      // Offset by ~5 meters from active classroom session
+      setGpsCoords({ lat: baseLat + 0.00004, lng: baseLng + 0.00004 })
     } else {
-      setGpsCoords({ lat: 28.550000, lng: 77.196000 })
+      // Offset by ~750 meters (outside geofence)
+      setGpsCoords({ lat: baseLat + 0.0070, lng: baseLng + 0.0070 })
     }
     setGpsStatus('ok')
   }
@@ -234,11 +254,14 @@ export default function StudentPage() {
       streamRef.current = stream
       if (videoRef.current) { 
         videoRef.current.srcObject = stream
-        videoRef.current.play() 
+        videoRef.current.setAttribute('playsinline', 'true')
+        try {
+          await videoRef.current.play()
+        } catch { /* autoplay handled */ }
       }
       setStreaming(true)
     } catch {
-      setError('Camera access denied. Please grant camera permissions to verify your face.')
+      setError('Camera access denied or device camera busy. Please grant camera permissions to verify your face.')
     }
   }
 
@@ -257,12 +280,20 @@ export default function StudentPage() {
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return
+    const video = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    canvas.width = videoRef.current.videoWidth || 640
-    canvas.height = videoRef.current.videoHeight || 480
-    ctx.drawImage(videoRef.current, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.90)
+
+    // Scale down to standard 480px width for fast mobile upload & reliable facial recognition (~35KB instead of 6MB)
+    const targetWidth = 480
+    const targetHeight = video.videoHeight && video.videoWidth 
+      ? Math.round((video.videoHeight / video.videoWidth) * targetWidth) 
+      : 360
+
+    canvas.width = targetWidth
+    canvas.height = targetHeight
+    ctx.drawImage(video, 0, 0, targetWidth, targetHeight)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82)
     setCapturedImage(dataUrl)
     stopCamera()
   }
@@ -522,8 +553,28 @@ export default function StudentPage() {
                 )}
 
                 {gpsStatus === 'ok' && (
-                  <div className="alert alert-success mb-4">
-                    <><CheckCircle2 size={16} color="var(--success)" style={{display:'inline', marginBottom:-3, marginRight:4}}/> GPS Fixed:</> {gpsCoords.lat?.toFixed(5)}, {gpsCoords.lng?.toFixed(5)}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} className="mb-4">
+                    <div className="alert alert-success" style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                      <span><CheckCircle2 size={16} color="var(--success)" style={{display:'inline', marginBottom:-3, marginRight:6}}/><strong>GPS Fixed:</strong> {gpsCoords.lat?.toFixed(5)}, {gpsCoords.lng?.toFixed(5)}</span>
+                      <span className="badge badge-success">Location Acquired</span>
+                    </div>
+
+                    {sessionInfo?.lat != null && currentDistance !== null && (
+                      <div 
+                        className={`alert ${isGpsWithinRange ? 'alert-success' : 'alert-danger'}`} 
+                        style={{ margin: 0, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}
+                      >
+                        <span>
+                          <strong>Distance to Classroom:</strong> {currentDistance}m 
+                          <span style={{ opacity: 0.85, marginLeft: 6 }}>
+                            (Limit: {allowedRadius}m + 35m indoor buffer)
+                          </span>
+                        </span>
+                        <span className={`badge ${isGpsWithinRange ? 'badge-success' : 'badge-danger'}`}>
+                          {isGpsWithinRange ? '✓ In Classroom Range' : '✕ Out of Range'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -538,20 +589,26 @@ export default function StudentPage() {
                     <><Radio size={15} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Acquire Live GPS</>
                   </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => simulateGPS(true)}>
-                    <><School size={15} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Inside Classroom (12m)</>
+                    <><School size={15} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Inside Classroom (~5m)</>
                   </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => simulateGPS(false)}>
-                    <><Home size={15} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Outside Classroom (550m)</>
+                    <><Home size={15} style={{display:'inline', marginBottom:-2, marginRight:4}}/> Outside Classroom (~750m)</>
                   </button>
                 </div>
 
                 {gpsStatus === 'ok' && (
                   <button 
-                    className="btn btn-success btn-full mt-6" 
+                    className={`btn ${isGpsWithinRange ? 'btn-success' : 'btn-danger'} btn-full mt-6`} 
                     onClick={proceedToCamera} 
                     disabled={!sessionId}
                   >
-                    {!sessionId ? 'Scan Faculty QR to Continue' : <><CheckCircle2 size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> GPS Verified — Proceed to AI Face Match →</>}
+                    {!sessionId ? (
+                      'Scan Faculty QR to Continue'
+                    ) : isGpsWithinRange ? (
+                      <><CheckCircle2 size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> GPS Verified ({currentDistance !== null ? `${currentDistance}m` : 'In Range'}) — Proceed to AI Face Match →</>
+                    ) : (
+                      <><AlertTriangle size={16} style={{display:'inline', marginBottom:-3, marginRight:6}}/> Outside Geofence ({currentDistance}m) — Move Closer to Room</>
+                    )}
                   </button>
                 )}
               </div>
@@ -600,7 +657,7 @@ export default function StudentPage() {
                 </h2>
                 {streaming && (
                   <span className={`badge ${faceDetected ? 'badge-success' : 'badge-warning'}`}>
-                    {faceDetected ? `● Face Detected (${faceConfidence}%)` : '○ Searching Face...'}
+                    {faceDetected ? '● Face in Frame' : '○ Center Face in Frame'}
                   </span>
                 )}
               </div>
@@ -614,6 +671,7 @@ export default function StudentPage() {
                     <video 
                       ref={videoRef} 
                       playsInline 
+                      autoPlay
                       muted 
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} 
                     />
